@@ -5,12 +5,17 @@
 ===============================================================================
 CHANGELOG
 
+Ver.1.0.3.14.05.2026.21.10.00
+- Added "Concept by BanRap" branding
+- Improved winner sound with double ding
+- Improved winner animation polish
+- Added smoother UI transitions
+- Finalized stable multiplayer release
+
 Ver.1.0.2.14.05.2026.20.32.00
 - Fixed Android browser button crash
 - Fixed AudioContext initialization issue
 - Added safe mobile sound handling
-- Improved multiplayer synchronization
-- Added winner animation system
 
 Ver.1.0.1.14.05.2026.20.05.00
 - Added winner/loser sounds
@@ -24,9 +29,6 @@ Ver.1.0.0.14.05.2026.19.01.00
 
 Ver.0.9.9.14.05.2026.18.40.00
 - Fixed duplicate buzz registrations
-
-Ver.0.9.8.14.05.2026.18.20.00
-- Improved polling stability
 ===============================================================================
 -->
 
@@ -59,7 +61,7 @@ body{
     align-items:center;
     padding:20px;
     position:relative;
-    transition:background 0.3s ease;
+    overflow:hidden;
 }
 
 .screen{
@@ -71,10 +73,22 @@ body{
     padding:28px;
     display:none;
     box-shadow:0 20px 40px rgba(0,0,0,0.5);
+    animation:fadeIn 0.25s ease;
 }
 
 .screen.active{
     display:block;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
 }
 
 h1{
@@ -82,6 +96,7 @@ h1{
     font-size:30px;
     margin-bottom:24px;
     font-weight:800;
+    letter-spacing:1px;
 }
 
 h1 span{
@@ -108,7 +123,7 @@ button{
     font-weight:700;
     margin-bottom:12px;
     cursor:pointer;
-    transition:transform 0.15s ease;
+    transition:all 0.15s ease;
 }
 
 button:active{
@@ -155,8 +170,8 @@ button:active{
 }
 
 .buzzer{
-    width:200px;
-    height:200px;
+    width:210px;
+    height:210px;
     border-radius:50%;
     border:none;
     color:white;
@@ -173,7 +188,7 @@ button:active{
 .green{
     background:#059669;
     border-bottom:12px solid #047857;
-    box-shadow:0 0 25px rgba(16,185,129,0.5);
+    box-shadow:0 0 35px rgba(16,185,129,0.6);
 }
 
 .panel{
@@ -236,6 +251,15 @@ button:active{
     position:fixed;
     bottom:8px;
     right:12px;
+    font-size:10px;
+    color:#555;
+    font-family:monospace;
+}
+
+.brand{
+    position:fixed;
+    bottom:8px;
+    left:12px;
     font-size:10px;
     color:#555;
     font-family:monospace;
@@ -375,8 +399,12 @@ button:active{
 
 </div>
 
+<div class="brand">
+Concept by BanRap
+</div>
+
 <div class="version">
-Ver.1.0.2.14.05.2026.20.32.00
+Ver.1.0.3.14.05.2026.21.10.00
 </div>
 
 <script>
@@ -386,7 +414,7 @@ VERSION
 ========================= */
 
 const APP_VERSION =
-"Ver.1.0.2.14.05.2026.20.32.00";
+"Ver.1.0.3.14.05.2026.21.10.00";
 
 /* =========================
 SUPABASE CONFIG
@@ -427,7 +455,7 @@ let alreadyAnnouncedWinner = false;
 let audioCtx = null;
 
 /* =========================
-SAFE AUDIO INIT
+AUDIO
 ========================= */
 
 function initAudio(){
@@ -441,50 +469,41 @@ function initAudio(){
         )();
 }
 
-/* =========================
-VERSION DISPLAY
-========================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    ()=>{
-        const versionDiv =
-            document.querySelector(".version");
-
-        if(versionDiv){
-            versionDiv.innerText =
-                APP_VERSION;
-        }
-    }
-);
-
-/* =========================
-SOUNDS
-========================= */
-
 function playWinnerSound(){
 
     if(!audioCtx) return;
 
-    const osc =
+    const osc1 =
         audioCtx.createOscillator();
 
-    const gain =
+    const gain1 =
         audioCtx.createGain();
 
-    osc.type = "triangle";
+    osc1.type = "triangle";
+    osc1.frequency.value = 880;
+    gain1.gain.value = 0.12;
 
-    osc.frequency.value = 880;
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
 
-    gain.gain.value = 0.08;
+    osc1.start();
+    osc1.stop(audioCtx.currentTime + 0.09);
 
-    osc.connect(gain);
+    const osc2 =
+        audioCtx.createOscillator();
 
-    gain.connect(audioCtx.destination);
+    const gain2 =
+        audioCtx.createGain();
 
-    osc.start();
+    osc2.type = "triangle";
+    osc2.frequency.value = 1180;
+    gain2.gain.value = 0.12;
 
-    osc.stop(audioCtx.currentTime + 0.12);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+
+    osc2.start(audioCtx.currentTime + 0.1);
+    osc2.stop(audioCtx.currentTime + 0.2);
 }
 
 function playLoserSound(){
@@ -498,17 +517,13 @@ function playLoserSound(){
         audioCtx.createGain();
 
     osc.type = "sawtooth";
-
     osc.frequency.value = 180;
-
     gain.gain.value = 0.08;
 
     osc.connect(gain);
-
     gain.connect(audioCtx.destination);
 
     osc.start();
-
     osc.stop(audioCtx.currentTime + 0.15);
 }
 
@@ -521,11 +536,11 @@ function triggerWinnerAnimation(){
     document.body.animate(
         [
             {background:"#0b0b0b"},
-            {background:"#063"},
+            {background:"#064e3b"},
             {background:"#0b0b0b"}
         ],
         {
-            duration:600
+            duration:700
         }
     );
 
@@ -535,11 +550,11 @@ function triggerWinnerAnimation(){
     btn.animate(
         [
             {transform:"scale(1)"},
-            {transform:"scale(1.08)"},
+            {transform:"scale(1.1)"},
             {transform:"scale(1)"}
         ],
         {
-            duration:500
+            duration:550
         }
     );
 }
@@ -607,10 +622,6 @@ async function adminLogin(){
             1000
         );
 }
-
-/* =========================
-JOIN GUEST
-========================= */
 
 async function joinGuest(){
 
@@ -690,10 +701,6 @@ async function joinGuest(){
     }
 }
 
-/* =========================
-BUZZ
-========================= */
-
 async function buzz(){
 
     if(!canBuzz) return;
@@ -736,10 +743,6 @@ async function buzz(){
 
     }catch(e){}
 }
-
-/* =========================
-PLAYER SYNC
-========================= */
 
 async function syncPlayer(){
 
@@ -835,10 +838,6 @@ async function syncPlayer(){
 
     }catch(e){}
 }
-
-/* =========================
-ADMIN REFRESH
-========================= */
 
 async function refreshAdmin(){
 
@@ -956,10 +955,6 @@ async function refreshAdmin(){
     }catch(e){}
 }
 
-/* =========================
-RESET BUZZERS
-========================= */
-
 async function resetBuzzers(){
 
     try{
@@ -974,10 +969,6 @@ async function resetBuzzers(){
 
     }catch(e){}
 }
-
-/* =========================
-LEAVE SESSION
-========================= */
 
 async function leaveSession(){
 
@@ -1004,10 +995,6 @@ async function leaveSession(){
 
     location.reload();
 }
-
-/* =========================
-CLOSE SESSION
-========================= */
 
 async function closeSession(){
 
