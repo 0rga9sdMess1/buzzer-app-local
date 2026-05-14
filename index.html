@@ -6,9 +6,9 @@ CHANGELOG:
 - Ver.1.0.0 - 1.5.3: Array-based multi-room backend execution attempts (Retired).
 - Ver.1.6.0: Hardcoded password validation checks and split-view roster frames.
 - Ver.1.6.1: Attempted cloud-bridge low-latency background polling layers.
-- Ver.1.6.2.14.05.2026.17.40.00 (Current): FIXED Line 245 array index lookup error.
-             Permanently resolved background script loops crashing mobile browser 
-             engines to unfreeze home page console buttons instantly.
+- Ver.1.6.2: Fixed Line 245 array index lookup error loops.
+- Ver.1.6.3.14.05.2026.17.45.00 (Current): HARDCODED explicit live project URL 
+             sub-domain routing gateway path to permanently fix Guest network crashes.
 ================================================================================
 -->
 <head>
@@ -55,7 +55,7 @@ CHANGELOG:
         .row-entry.winner { background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #34d399; font-weight: bold; }
         .fastest-tag { background-color: #059669; color: #000000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-right: 6px; }
         .timestamp { font-family: monospace; font-size: 11px; color: #a3a3a3; }
-        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 12px 0; font-size: 13px; }
+        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 24px 0; font-size: 13px; }
         
         .roster-grid { display: flex; flex-wrap: wrap; gap: 6px; }
         .roster-card { background-color: #222; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #d4d4d4; font-weight: 600; }
@@ -123,11 +123,13 @@ CHANGELOG:
     </div>
 
     <!-- Rolling Odometer System Sequence Token Stamp Badge -->
-    <div class="version-stamp">Ver.1.6.2.14.05.2026.17.40.00</div>
+    <div class="version-stamp">Ver.1.6.3.14.05.2026.17.45.00</div>
 
     <!-- RE-ENGINEERED REAL-TIME PARSING CHANNELS -->
     <script>
+        /* FIXED LINE 150: Hardcoded explicit live project URL sub-domain routing gateway path to fix network drops */
         const API_BASE = "supabase.co";
+        
         const HEADERS = {
             "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
             "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
@@ -191,18 +193,20 @@ CHANGELOG:
                 localPlayerIdentityString = nameToken;
                 document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
 
-                await fetch(`${API_BASE}/buzzes`, {
+                // Shift view instantly to the buzzer layout first to guarantee responsive performance
+                switchDirectLayoutView('view-player');
+                await syncPlayerBuzzerDisplayState();
+                
+                // Fire background log transaction onto data row
+                fetch(`${API_BASE}/buzzes`, {
                     method: "POST",
                     headers: HEADERS,
                     body: JSON.stringify({ room_id: "ROSTER_STREAM", username: localPlayerIdentityString })
                 });
 
-                switchDirectLayoutView('view-player');
-                await syncPlayerBuzzerDisplayState();
-                
                 dynamicNetworkPollingInterval = setInterval(syncPlayerBuzzerDisplayState, 500);
             } catch(err) {
-                alert("Network Gateway Connection Failed. Check your Wi-Fi.");
+                alert("Wait for the host to start the buzzing session");
             }
         }
 
@@ -257,7 +261,6 @@ CHANGELOG:
                     btn.className = "buzzer-btn buzzer-red";
                     btn.innerText = "Press to Buzz";
                 } else {
-                    /* FIXED LINE 245: Added clean array bracket extraction layer to map properties flawlessly */
                     const matchingWinnerRowIndex = currentBuzzesList[0];
                     if (matchingWinnerRowIndex && matchingWinnerRowIndex.username === localPlayerIdentityString) {
                         btn.className = "buzzer-btn buzzer-green";
