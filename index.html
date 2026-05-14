@@ -4,10 +4,11 @@
 ================================================================================
 CHANGELOG:
 - Ver.1.0.0 - 1.5.3: Array-based multi-room backend execution attempts (Retired).
-- Ver.1.6.0.14.05.2026.17.30.00 (Current): Complete structural reboot. Stripped 
-             all room complexities. Hardcoded "BlackMirror" password protection, 
-             session validation locks, active participant roster tracking, 
-             and clean chronological millisecond buzzer indexing up to 10.
+- Ver.1.6.0: Hardcoded password validation checks and split-view roster frames.
+- Ver.1.6.1.14.05.2026.17.35.00 (Current): FIXED Cross-app browser isolation blocks.
+             Upgraded system to use a Shared Network Bridge to coordinate data
+             across Chrome and DuckDuckGo. Implemented a 400ms low-latency reactive 
+             polling engine to make the Admin console completely real-time.
 ================================================================================
 -->
 <head>
@@ -75,7 +76,7 @@ CHANGELOG:
         <button onclick="switchDirectLayoutView('view-password')" class="btn btn-secondary">Host as Admin</button>
     </div>
 
-    <!-- VIEW 2: HARDCODED GATE PASSWORD PANEL -->
+    <!-- VIEW 2: MASTER PASSWORD ACCESS CODES GATEWAY -->
     <div id="view-password" class="screen">
         <h1>ADMIN<span>LOCK</span></h1>
         <div class="form-group">
@@ -86,7 +87,7 @@ CHANGELOG:
         <button onclick="switchDirectLayoutView('view-home')" class="btn btn-secondary">Return to Home</button>
     </div>
 
-    <!-- VIEW 3: GUEST INTERACTIVE RESPONDENT BUZZER CARD -->
+    <!-- VIEW 3: GUEST RESPONDENT INTERACTIVE BUZZER CARD -->
     <div id="view-player" class="screen">
         <div class="meta-container">
             <div class="badge">SESSION: <strong style="color:#34d399;">LIVE</strong></div>
@@ -95,10 +96,10 @@ CHANGELOG:
         <div class="buzzer-wrapper">
             <button id="buzzer-btn" onclick="executePlayerBuzzHitTransmission()" class="buzzer-btn buzzer-red">Press to Buzz</button>
         </div>
-        <button onclick="syncPlayerBuzzerStateWithHostCommand()" class="btn btn-secondary" style="margin-top: 12px; padding: 12px; font-size: 14px;">Sync Buzzer Status 🔄</button>
+        <button onclick="syncPlayerBuzzerDisplayState()" class="btn btn-secondary" style="margin-top: 12px; padding: 12px; font-size: 14px;">Sync Buzzer Status 🔄</button>
     </div>
 
-    <!-- VIEW 4: MASTER CONTROL BOARD ADMIN FEED -->
+    <!-- VIEW 4: MASTER CONTROL BOARD REAL-TIME FEED -->
     <div id="view-admin" class="screen" style="max-width: 480px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #262626; padding-bottom: 12px;">
             <div>
@@ -108,8 +109,7 @@ CHANGELOG:
             <button onclick="clearMasterLeaderboardFeed()" class="btn btn-primary" style="width: auto; padding: 10px 16px; margin: 0; font-size: 13px;">Reset Board</button>
         </div>
         
-        <span class="section-title">Buzzer Feed Order (Max 10 Response Slots)</span>
-        <button onclick="refreshAdminDashboardPanelsNatively()" class="btn btn-secondary" style="padding: 10px; font-size: 12px; margin-bottom: 10px; width: 100%;">Refresh Logs Feed 🔄</button>
+        <span class="section-title">Buzzer Feed Order (Real-Time Auto Update)</span>
         <div id="admin-leaderboard-box" class="panel-box">
             <div class="empty-text">Waiting for players to buzz...</div>
         </div>
@@ -122,188 +122,211 @@ CHANGELOG:
         <button onclick="terminateMasterSession()" class="btn btn-danger" style="font-size: 14px; padding: 12px; margin-top: 12px;">Close & Delete Session</button>
     </div>
 
-    <!-- Rolling Odometer System Sequence Token Stamp -->
-    <div class="version-stamp">Ver.1.6.0.14.05.2026.17.30.00</div>
+    <!-- Rolling Odometer System Sequence Token Stamp Badge -->
+    <div class="version-stamp">Ver.1.6.1.14.05.2026.17.35.00</div>
 
-    <!-- NATIVE PARSING MECHANICS CONTROLLER SCRIPT -->
+    <!-- RE-ENGINEERED REAL-TIME PARSING CHANNELS -->
     <script>
+        // Shared Cross-App Communication Bridge: Direct low-latency server API paths
+        const API_BASE = "supabase.co";
+        const HEADERS = {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        };
+
         let localPlayerIdentityString = "";
+        let canBuzz = true;
+        let dynamicNetworkPollingInterval = null;
 
         /**
-         * Clean Viewport Router:
-         * Switches visibility parameters instantly without hitting storage loop barriers.
+         * Clean Viewport Layout Router: Switches visibility parameters instantly.
          */
         function switchDirectLayoutView(targetViewId) {
-            try {
-                const views = ['view-home', 'view-password', 'view-player', 'view-admin'];
-                views.forEach(id => {
-                    const el = document.getElementById(id);
-                    if(el) el.style.display = 'none';
-                });
-                const target = document.getElementById(targetViewId);
-                if(target) target.style.display = 'block';
-            } catch(e) { console.error(e); }
+            const views = ['view-home', 'view-password', 'view-player', 'view-admin'];
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+            const target = document.getElementById(targetViewId);
+            if(target) target.style.display = 'block';
         }
 
         /**
-         * Password Validation Interceptor:
-         * Enforces strict compliance against hardcoded asset string token variables.
+         * Password Validation Interceptor: Validates against the hardcoded master asset secret string.
          */
-        function validateAdminSecretPassword() {
+        async function validateAdminSecretPassword() {
             const secretInput = document.getElementById('password-input');
             if(!secretInput) return;
 
-            const entryTextString = secretInput.value.trim();
-
-            if (entryTextString === "BlackMirror") {
-                // Success path: Write initialization variable to unlock guest logging gates
-                localStorage.setItem("quiz_master_session_status", "ACTIVE");
-                localStorage.setItem("quiz_master_buzzes_raw", "[]");
-                localStorage.setItem("quiz_master_roster_raw", "[]");
-                
-                secretInput.value = ""; // Clear input field form parameters
+            if (secretInput.value.trim() === "BlackMirror") {
+                secretInput.value = ""; 
                 switchDirectLayoutView('view-admin');
-                refreshAdminDashboardPanelsNatively();
+                
+                try {
+                    // Reset cloud table rows to host a pristine game round session profile
+                    await fetch(`${API_BASE}/rooms`, {
+                        method: "POST",
+                        headers: HEADERS,
+                        body: JSON.stringify({ id: "MASTER_SESSION" })
+                    });
+                } catch(e) {}
+
+                await clearMasterLeaderboardFeed();
+                
+                // Mount 400ms low-latency reactive interceptor polling loop to push automatic updates
+                dynamicNetworkPollingInterval = setInterval(refreshAdminDashboardPanelsNatively, 400);
             } else {
                 alert("That is the wrong password , but Shut up and Dance");
             }
         }
 
         /**
-         * Guest Validation Entry Pipeline:
-         * Checks the master state slot before allowing players to switch screens.
+         * Guest Validation Entry Pipeline: Performs checks over the shared network bridge URL.
          */
-        function navigateGuestJoinFlow() {
+        async function navigateGuestJoinFlow() {
             const userInput = document.getElementById('username-input');
             if(!userInput) return;
 
             const nameToken = userInput.value.trim();
-
             if (!nameToken) return alert("Validation Failure: Username field input is required to connect.");
             if (nameToken.toUpperCase() === "ADMIN") return alert("Validation Failure: The username 'Admin' is reserved.");
 
-            const sessionGateStatus = localStorage.getItem("quiz_master_session_status");
-
-            // Structural Access Guard Constraint Check
-            if (sessionGateStatus !== "ACTIVE") {
-                return alert("Wait for the host to start the buzzing session");
-            }
-
-            localPlayerIdentityString = nameToken;
-            document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
-
-            // Commit user name into the shared participant cache file row string array
             try {
-                let rosterRaw = localStorage.getItem("quiz_master_roster_raw");
-                let roster = rosterRaw ? JSON.parse(rosterRaw) : [];
-                if (!roster.includes(localPlayerIdentityString)) {
-                    roster.push(localPlayerIdentityString);
-                    localStorage.setItem("quiz_master_roster_raw", JSON.stringify(roster));
-                }
-            } catch(e) { console.error(e); }
+                // Shared Network Bridge Verification call: Verifies if the host's cloud session row is open
+                const response = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
+                const sessionGateList = await response.json();
 
-            switchDirectLayoutView('view-player');
-            syncPlayerBuzzerDisplayState();
+                if (!sessionGateList || sessionGateList.length === 0) {
+                    return alert("Wait for the host to start the buzzing session");
+                }
+
+                localPlayerIdentityString = nameToken;
+                document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
+
+                // Log the guest player identity node down into the shared cluster table data row
+                await fetch(`${API_BASE}/buzzes`, {
+                    method: "POST",
+                    headers: HEADERS,
+                    body: JSON.stringify({ room_id: "ROSTER_STREAM", username: localPlayerIdentityString })
+                });
+
+                switchDirectLayoutView('view-player');
+                await syncPlayerBuzzerDisplayState();
+                
+                // Mount low-latency listener to watch for round resets and close commands
+                dynamicNetworkPollingInterval = setInterval(syncPlayerBuzzerDisplayState, 500);
+            } catch(err) {
+                alert("Network Gateway Connection Failed. Check your Wi-Fi.");
+            }
         }
 
         /**
          * Transmission Pipeline: Logs name indices down directly inside the data schema rows.
          */
-        function executePlayerBuzzHitTransmission() {
+        async function executePlayerBuzzHitTransmission() {
             if (!canBuzz) return;
+            canBuzz = false;
 
             if (navigator.vibrate) navigator.vibrate(100);
 
-            try {
-                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
-                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
-
-                // Strict limit cap guard constraint check to lock data input rows to 10 entries maximum
-                if (buzzes.length < 10) {
-                    const matchCheck = buzzes.some(entry => entry.name === localPlayerIdentityString);
-                    if (!matchCheck) {
-                        buzzes.push({
-                            name: localPlayerIdentityString,
-                            time: new Date().toLocaleTimeString()
-                        });
-                        localStorage.setItem("quiz_master_buzzes_raw", JSON.stringify(buzzes));
-                    }
-                }
-            } catch(e) { console.error(e); }
-
-            canBuzz = false;
+            // Optimistic rendering: Instantly freeze button locally while network logs request
             const btn = document.getElementById('buzzer-btn');
             if(btn) {
                 btn.className = "buzzer-btn buzzer-green";
                 btn.innerText = "BUZZED!";
             }
+
+            try {
+                // Pull logs from server to protect against duplicate entry overrides
+                const response = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username`, { method: "GET", headers: HEADERS });
+                const currentBuzzesList = await response.json();
+
+                if (currentBuzzesList.length < 10) {
+                    const matchCheck = currentBuzzesList.some(entry => entry.username === localPlayerIdentityString);
+                    if (!matchCheck) {
+                        await fetch(`${API_BASE}/buzzes`, {
+                            method: "POST",
+                            headers: HEADERS,
+                            body: JSON.stringify({ room_id: "MASTER_SESSION", username: localPlayerIdentityString })
+                        });
+                    }
+                }
+            } catch(e) {}
         }
 
         /**
          * Dynamic State Sync Controller (Guest View):
          * Reads flat table logs to process color configurations safely.
          */
-        function syncPlayerBuzzerStateWithHostCommand() {
-            const sessionGateStatus = localStorage.getItem("quiz_master_session_status");
-            
-            if (sessionGateStatus !== "ACTIVE") {
-                alert("The Host has closed this gaming room session.");
-                location.reload();
-                return;
-            }
-            syncPlayerBuzzerDisplayState();
-        }
-
-        function syncPlayerBuzzerDisplayState() {
+        async function syncPlayerBuzzerDisplayState() {
             try {
-                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
-                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
+                // Check if host closed room session entirely
+                const sessionResponse = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
+                const activeSessionList = await sessionResponse.json();
+
+                if (!activeSessionList || activeSessionList.length === 0) {
+                    clearInterval(dynamicNetworkPollingInterval);
+                    alert("The Host has closed this gaming room session.");
+                    location.reload();
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username&order=buzzed_at.asc`, { method: "GET", headers: HEADERS });
+                const currentBuzzesList = await response.json();
                 const btn = document.getElementById('buzzer-btn');
                 if(!btn) return;
 
-                if (buzzes.length === 0) {
-                    // Board is empty: Revert to red active framework state instantly
+                if (!currentBuzzesList || currentBuzzesList.length === 0) {
+                    // Board is empty: Host clicked reset. Revert to red active framework state instantly.
                     canBuzz = true;
                     btn.className = "buzzer-btn buzzer-red";
                     btn.innerText = "Press to Buzz";
                 } else {
-                    // Board has records: Lock out double hits safely and extract winner name properties cleanly
-                    canBuzz = false;
-                    const absoluteWinnerName = buzzes[0].name;
-                    btn.className = "buzzer-btn buzzer-green";
-                    btn.innerText = `${absoluteWinnerName} BUZZED!`;
+                    // Board has records: Find out who buzzed first in the table and map text values safely
+                    const matchingWinnerRowIndex = currentBuzzesList[0];
+                    if (matchingWinnerRowIndex && matchingWinnerRowIndex.username === localPlayerIdentityString) {
+                        btn.className = "buzzer-btn buzzer-green";
+                        btn.innerText = "YOU BUZZED!";
+                    } else {
+                        canBuzz = false;
+                        const globalWinnerIdentity = matchingWinnerRowIndex ? matchingWinnerRowIndex.username : "Player";
+                        btn.className = "buzzer-btn buzzer-green";
+                        btn.innerText = `${globalWinnerIdentity} BUZZED!`;
+                    }
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
         /**
-         * Admin Dashboard Sync Renderer:
-         * Manages millisecond buzzer feeds and lists player rosters natively on tap.
+         * Real-Time Admin Dashboard Synchronization Renderer (400ms Polling Loop):
+         * Pulls table logs and maps panels cleanly down to the millisecond index.
          */
-        function refreshAdminDashboardPanelsNatively() {
+        async function refreshAdminDashboardPanelsNatively() {
             try {
                 // Panel 1: Chronological millisecond buzzer responses mapping loop
-                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
-                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
+                const buzzResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username,buzzed_at&order=buzzed_at.asc`, { method: "GET", headers: HEADERS });
+                const buzzes = await buzzResponse.json();
                 const leaderboardContainer = document.getElementById('admin-leaderboard-box');
                 
-                if (leaderboardContainer) {
+                if (leaderboardContainer && buzzes) {
                     if (buzzes.length === 0) {
                         leaderboardContainer.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
                     } else {
                         leaderboardContainer.innerHTML = "";
-                        buzzes.forEach((entry, idx) => {
+                        buzzes.slice(0, 10).forEach((entry, idx) => {
                             const row = document.createElement('div');
                             const isFirst = idx === 0;
                             row.className = `row-entry ${isFirst ? 'winner' : ''}`;
                             row.innerHTML = `
                                 <div class="row-left">
                                     <span class="rank">#${idx + 1}</span>
-                                    <span>${entry.name}</span>
+                                    <span>${entry.username}</span>
                                 </div>
                                 <div style="display:flex; align-items:center;">
                                     ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
-                                    <span class="timestamp">${entry.time}</span>
+                                    <span class="timestamp">${new Date(entry.buzzed_at).toLocaleTimeString()}</span>
                                 </div>
                             `;
                             leaderboardContainer.appendChild(row);
@@ -312,45 +335,12 @@ CHANGELOG:
                 }
 
                 // Panel 2: Realtime Active connected participants roster deck template
-                let rosterRaw = localStorage.getItem("quiz_master_roster_raw");
-                let roster = rosterRaw ? JSON.parse(rosterRaw) : [];
+                const rosterResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM&select=username`, { method: "GET", headers: HEADERS });
+                const roster = await rosterResponse.json();
                 const rosterContainer = document.getElementById('admin-roster-box');
                 
-                if (rosterContainer) {
+                if (rosterContainer && roster) {
                     if (roster.length === 0) {
                         rosterContainer.innerHTML = '<div class="empty-text">No users active...</div>';
                     } else {
-                        rosterContainer.innerHTML = '<div class="roster-grid"></div>';
-                        const grid = rosterContainer.querySelector('.roster-grid');
-                        roster.forEach(player => {
-                            const elementCard = document.createElement('span');
-                            elementCard.className = 'roster-card';
-                            elementCard.innerText = player;
-                            grid.appendChild(elementCard);
-                        });
-                    }
-                }
-            } catch(err) { console.error(err); }
-        }
-
-        /**
-         * Master Admin Board Clear Action Routine: Wipes responses, leaving active players saved.
-         */
-        function clearMasterLeaderboardFeed() {
-            localStorage.setItem("quiz_master_buzzes_raw", "[]");
-            refreshAdminDashboardPanelsNatively();
-        }
-
-        /**
-         * Master Admin Hard Close Teardown Utility: Disconnects everything.
-         */
-        function terminateMasterSession() {
-            if(!confirm("Are you sure you want to end this game session? All guests will be disconnected.")) return;
-            localStorage.removeItem("quiz_master_session_status");
-            localStorage.removeItem("quiz_master_buzzes_raw");
-            localStorage.removeItem("quiz_master_roster_raw");
-            location.reload();
-        }
-    </script>
-</body>
-</html>
+             
