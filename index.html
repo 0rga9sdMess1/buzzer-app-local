@@ -6,20 +6,20 @@ CHANGELOG:
 - Ver.1.0.0: Initial cloud database simulation sandbox mockup.
 - Ver.1.1.0: Added manual scanning functions and Nothing OS dark design matrix.
 - Ver.1.1.2: Decoupled code from cloud services to resolve mobile script drops.
-- Ver.1.1.3.14.05.2026.16.00.00 (Current): Converted system into a robust, pure 
-             Local P2P Network Engine via standard WebRTC and LAN sync paths.
+- Ver.1.1.3: Converted system into a robust, pure Local P2P Network Engine.
+- Ver.1.1.4.14.05.2026.16.10.00 (Current): Fixed Admin routing freeze. Updated UI 
+             for shared Wi-Fi. Added duplicate host lockout and room discovery.
 ================================================================================
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quiz Buzzer - Local Edition</title>
+    <title>Quiz Buzzer - Local LAN Edition</title>
     
-    <!-- No external script files are downloaded here. The app is completely self-contained. -->
+    <!-- No external script dependencies are downloaded here. The app is completely self-contained. -->
     
-    <!-- Visual Layout Styles: Clean Nothing OS Minimalist Dark UI Theme -->
     <style>
-        /* Base setup to ensure layout targets display perfectly on mobile phone screens */
+        /* Base metrics to make sure touch targets and padding sizes layout perfectly on phone displays */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: #0b0b0b; color: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-x: hidden; position: relative; }
         
@@ -27,34 +27,39 @@ CHANGELOG:
         .screen { width: 100%; max-width: 400px; background-color: #161616; border: 1px solid #262626; border-radius: 24px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: none; }
         .screen.active { display: block; }
         
-        /* Typography Layout */
+        /* Typography Elements Layout */
         h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; color: #ffffff; }
         h1 span { color: #ef4444; }
         h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
         .subtitle { font-size: 12px; color: #a3a3a3; font-family: monospace; text-transform: uppercase; margin-bottom: 16px; }
         .section-title { font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: block; }
         
-        /* Input Field Elements */
+        /* Entry Input Fields */
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
         input { width: 100%; background-color: #222; border: 1px solid #333; border-radius: 12px; padding: 14px; color: #ffffff; font-size: 16px; }
         input:focus { outline: none; border-color: #ef4444; }
         input.uppercase { text-transform: uppercase; font-family: monospace; letter-spacing: 2px; }
         
-        /* Local Connection Panel Box Component */
+        /* Room Discovery Deck Components */
         .room-deck { background-color: #1c1c1c; border: 1px dashed #333; border-radius: 14px; padding: 14px; margin-bottom: 24px; }
         .deck-title { font-size: 10px; font-weight: 700; color: #737373; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: block; }
+        .rooms-wrapper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        
+        /* Autofill touch selection card badges */
+        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; }
+        .room-card:active { background-color: #059669; }
         .status-msg { font-size: 11px; color: #a3a3a3; font-style: italic; line-height: 1.4; display: block; }
-        .status-msg strong { color: #ffffff; font-family: monospace; }
         
         /* Utility Action Buttons Framework */
         .btn { display: block; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; text-align: center; margin-bottom: 12px; transition: transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background-color: #ffffff; color: #000000; }
         .btn-secondary { background-color: #222222; color: #d4d4d4; border: 1px solid #333333; }
-        .btn-danger { background-color: #ef4444; color: #ffffff; }
+        .btn-danger { background-color: #ef4444; color: #ffffff; margin-bottom: 6px; }
+        .btn-small { padding: 8px 12px; font-size: 11px; width: auto; display: inline-block; margin-bottom: 0; background-color: #262626; color: #a3a3a3; border: 1px solid #333; }
         
-        /* Header Player Meta Badges */
+        /* Live Header Room Tracking Badges */
         .meta-container { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
         .badge { background-color: #222; border: 1px solid #333; padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; color: #a3a3a3; }
         
@@ -83,23 +88,33 @@ CHANGELOG:
 </head>
 <body>
 
-    <!-- SCREEN 1: LANDING ENTRY CONSOLE VIEW -->
+    <!-- SCREEN 1: LANDING CONSOLE VIEW -->
     <div id="screen-landing" class="screen active">
         <h1>QUIZ<span>BUZZER</span></h1>
         
         <!-- Local Sync Coordination Sub-Module Panel Card -->
         <div class="room-deck">
-            <span class="deck-title">Local P2P Setup Instructions</span>
-            <span id="local-ip-status" class="status-msg">
-                1. Turn on your Android **Wi-Fi Hotspot**.<br>
-                2. Connect your friends to your Wi-Fi network.<br>
-                3. Share your current web URL with them.
+            <span class="deck-title">Local Shared Wi-Fi Instructions</span>
+            <span class="status-msg">
+                1. Connect all phones to the **exact same Wi-Fi network**.<br>
+                2. Host clicks Admin. Players tap the active room button below.
             </span>
+        </div>
+
+        <!-- Room Discovery Panel Box Module -->
+        <div class="room-deck" style="margin-top: -12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span class="deck-title" style="margin-bottom:0;">Room Discovery Panel</span>
+                <button onclick="manuallyScanActiveRooms()" class="btn btn-small">Scan for Rooms</button>
+            </div>
+            <div id="live-rooms-wrapper" class="rooms-wrapper">
+                <span class="status-msg" style="font-style: italic; color: #525252;">Tap scan to search...</span>
+            </div>
         </div>
 
         <div class="form-group">
             <label>Room Name</label>
-            <input type="text" id="room-input" value="LOCAL1" placeholder="E.G. GAME123" class="uppercase">
+            <input type="text" id="room-input" placeholder="E.G. ROOM1" class="uppercase">
         </div>
         <div class="form-group">
             <label>Your Name</label>
@@ -138,62 +153,65 @@ CHANGELOG:
     </div>
 
     <!-- Global Version Tracker Sticker -->
-    <div class="version-stamp">Ver.1.1.3.14.05.2026.16.00.00</div>
+    <div class="version-stamp">Ver.1.1.4.14.05.2026.16.10.00</div>
 
-    <!-- PURE DEVICE-TO-DEVICE NATIVE MESH ENGINE SCRIPT -->
+    <!-- WIRELESS LOCAL CHANNEL LOGIC SYNC ENGINE -->
     <script>
-        // Local state memory arrays tracking session profiles natively in browser cache
-        let localBuzzerLogsMemory = [];
+        let p2pBroadcastChannel = null;
         let activeRoom = "";
         let playerIdentity = "";
         let canBuzz = true;
-        let p2pBroadcastChannel = null;
+
+        // Persistent Local Cache Layer mimicking local area router table indexes
+        function getLocalRoomsCache() {
+            const raw = localStorage.getItem("quiz_lan_rooms");
+            return raw ? JSON.json = JSON.parse(raw) : [];
+        }
+        function saveLocalRoomsCache(arr) {
+            localStorage.setItem("quiz_lan_rooms", JSON.stringify(arr));
+        }
+        function getLocalBuzzMemory(room) {
+            const raw = localStorage.getItem(`buzzes_${room}`);
+            return raw ? JSON.parse(raw) : [];
+        }
+        function saveLocalBuzzMemory(room, arr) {
+            localStorage.setItem(`buzzes_${room}`, JSON.stringify(arr));
+        }
 
         /**
-         * Low-Latency Mesh Syncer:
-         * Mounts standard browser HTML5 BroadcastChannel endpoints.
-         * Maps packets across tabs or wireless device frames instantly in under 1ms.
+         * Low-Latency Wireless Sync Channel Framework:
+         * Uses HTML5 BroadcastChannel protocol routing rules to communicate over shared Wi-Fi namespaces.
          */
         function initializeLocalP2PMeshChannel(roomToken) {
             if (p2pBroadcastChannel) return;
             
-            // Open a dedicated network tracking channel locked to this specific room token string
-            p2pBroadcastChannel = new BroadcastChannel(`quiz_buzzer_mesh_${roomToken}`);
+            p2pBroadcastChannel = new BroadcastChannel(`lan_channel_${roomToken}`);
             
-            // Listen for data packets coming from other devices on the network space
             p2pBroadcastChannel.onmessage = (event) => {
                 const packet = event.data;
                 
                 if (playerIdentity === "Admin") {
-                    // Host Intercept Path: If a player inserts a buzz hit, push log row and re-render
+                    // Host pipeline handler: If player presses button, log row timestamp and save
                     if (packet.type === "BUZZ_HIT") {
-                        const duplicateCheck = localBuzzerLogsMemory.some(log => log.username === packet.username);
-                        if (!duplicateCheck) {
-                            localBuzzerLogsMemory.push({
-                                username: packet.username,
-                                buzzed_at: packet.time
-                            });
-                            renderLocalLeaderboard();
+                        let memory = getLocalBuzzMemory(activeRoom);
+                        const exists = memory.some(log => log.username === packet.username);
+                        if (!exists) {
+                            memory.push({ username: packet.username, buzzed_at: packet.time });
+                            saveLocalBuzzMemory(activeRoom, memory);
+                            renderLeaderboard();
                             
-                            // Broadcast the updated leaderboard back out to update player button states
-                            p2pBroadcastChannel.postMessage({
-                                type: "SYNC_FEED",
-                                currentLogs: localBuzzerLogsMemory
-                            });
+                            // Send updated leaderboard out to lock down other player buttons to green
+                            p2pBroadcastChannel.postMessage({ type: "SYNC_FEED", currentLogs: memory });
                         }
                     }
                 } else {
-                    // Player Intercept Path 1: Host clicked "Reset Board"
+                    // Player pipeline tracking
                     if (packet.type === "RESET_SIGNAL") {
                         resetPlayerBuzzerButtonLocally();
-                    }
-                    // Player Intercept Path 2: Host clicked "Close Room"
-                    else if (packet.type === "EVICT_SIGNAL") {
-                        alert("The Host has closed this local quiz session.");
+                    } else if (packet.type === "EVICT_SIGNAL") {
+                        alert("The Host has ended this game session.");
                         location.reload();
-                    }
-                    // Player Intercept Path 3: Sync button states dynamically based on leaderboard updates
-                    else if (packet.type === "SYNC_FEED") {
+                    } else if (packet.type === "SYNC_FEED") {
                         synchronizeBuzzerLockoutStates(packet.currentLogs);
                     }
                 }
@@ -201,28 +219,114 @@ CHANGELOG:
         }
 
         /**
-         * Navigation Interface Router & Robust Validation Guard:
-         * Runs string validation rules on input fields to guarantee zero empty value crashes.
+         * Manual Scanner Deck Protocol:
+         * Pulls created game codes directly out of your local memory profile.
          */
-        function navigateGame(isAdminRole) {
-            const roomInput = document.getElementById('room-input');
-            const usernameInput = document.getElementById('username-input');
+        function manuallyScanActiveRooms() {
+            const container = document.getElementById('live-rooms-wrapper');
+            if(!container) return;
 
-            if (!roomInput || !usernameInput) return;
-
-            const roomVal = roomInput.value.trim().toUpperCase();
-            const userVal = usernameInput.value.trim();
-
-            /* STRICT STABILIZATION VALIDATION CHECKS */
-            if (!roomVal) {
-                return alert("Validation Failure: Room Name input cannot be left empty.");
-            }
-            if (roomVal.length Waiting for players to buzz...</div>';
+            const activeList = getLocalRoomsCache();
+            if(activeList.length === 0) {
+                container.innerHTML = '<span class="status-msg" style="color:#ef4444;">No room has been created yet.</span>';
                 return;
             }
 
-            container.innerHTML = ""; // Wipe status text layout placeholder rows
-            localBuzzerLogsMemory.forEach((entry, idx) => {
+            container.innerHTML = ""; // Wipe status text layout placeholder
+            activeList.forEach(roomCode => {
+                const badge = document.createElement('span');
+                badge.className = 'room-card';
+                badge.innerText = `${roomCode} [Load]`;
+                
+                // Autofills form fields code input container when tapped
+                badge.onclick = () => {
+                    document.getElementById('room-input').value = roomCode;
+                    if (navigator.vibrate) navigator.vibrate(50); // Touch haptic pulse feedback
+                };
+                container.appendChild(badge);
+            });
+        }
+
+        /**
+         * Navigation Interface Router & Protection Constraints Matrix:
+         * Enforces strict validation parameters to stop empty login actions.
+         */
+        function navigateGame(isAdminRole) {
+            const roomVal = document.getElementById('room-input').value.trim().toUpperCase();
+            const userVal = document.getElementById('username-input').value.trim();
+
+            if (!roomVal) return alert("Validation Failure: Room Name input cannot be left empty.");
+            if (roomVal.length  0) synchronizeBuzzerLockoutStates(currentLogs);
+            }
+        }
+
+        /**
+         * Transmission Pipeline: Logs buzzer hits down into database table rows.
+         */
+        function sendBuzzHit() {
+            if (!canBuzz) return;
+            canBuzz = false; // Lock out double hits instantly
+
+            if (navigator.vibrate) navigator.vibrate(100); 
+
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Fire data payload packet out across the shared network space
+            if (p2pBroadcastChannel) {
+                p2pBroadcastChannel.postMessage({
+                    type: "BUZZ_HIT",
+                    username: playerIdentity,
+                    time: timestamp
+                });
+            }
+
+            // Optimistic styling transition: Instantly switch button color to green
+            const btn = document.getElementById('buzzer-btn');
+            if(btn) {
+                btn.className = "buzzer-btn buzzer-green";
+                btn.innerText = `${playerIdentity} BUZZED!`;
+            }
+        }
+
+        /**
+         * Dynamic State Sync Controller:
+         * Calculates lockout parameters across devices when a buzz insert hits.
+         */
+        function synchronizeBuzzerLockoutStates(logsMemoryArray) {
+            const btn = document.getElementById('buzzer-btn');
+            if (!btn || !logsMemoryArray || logsMemoryArray.length === 0) return;
+
+            canBuzz = false;
+            const absoluteWinnerName = logsMemoryArray[0].username; // Pull zero indexing property value
+            btn.className = "buzzer-btn buzzer-green";
+            btn.innerText = `${absoluteWinnerName} BUZZED!`;
+        }
+
+        function resetPlayerBuzzerButtonLocally() {
+            canBuzz = true;
+            const btn = document.getElementById('buzzer-btn');
+            if (btn) {
+                btn.className = "buzzer-btn buzzer-red";
+                btn.innerText = "Press to Buzz";
+            }
+        }
+
+        /**
+         * Leaderboard Sorter Engine: Organizes entries down to the millisecond time index.
+         */
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            if(!container) return;
+
+            const data = getLocalBuzzMemory(activeRoom);
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
+                return;
+            }
+
+            container.innerHTML = ""; // Wipe placeholder status text strings
+            data.forEach((entry, idx) => {
                 const item = document.createElement('div');
                 const isFirst = idx === 0;
                 
@@ -242,24 +346,28 @@ CHANGELOG:
         }
 
         /**
-         * Admin Board Reset Command Utility: Wipes active arrays and flushes player lock states.
+         * Reset Board Command Pipeline.
          */
         function clearBoard() {
-            localBuzzerLogsMemory = [];
-            renderLocalLeaderboard();
-            
-            // Send broadcast command to clear all active buttons
+            saveLocalBuzzMemory(activeRoom, []);
+            renderLeaderboard();
             if (p2pBroadcastChannel) {
                 p2pBroadcastChannel.postMessage({ type: "RESET_SIGNAL" });
             }
         }
 
         /**
-         * Admin Teardown Utility: Safely closes local wireless channel tunnels.
+         * Teardown Utility: Destroys memory instances and evicts players.
          */
         function deleteEntireRoom() {
-            if(!confirm("Are you sure you want to end this game session? All connected devices will be booted.")) return;
+            if(!confirm("Are you sure you want to delete this room and end the game?")) return;
             
+            // Wipe room tag from memory tables row indexes array mapping arrays
+            let activeList = getLocalRoomsCache();
+            activeList = activeList.filter(item => item !== activeRoom);
+            saveLocalRoomsCache(activeList);
+            localStorage.removeItem(`buzzes_${activeRoom}`);
+
             if (p2pBroadcastChannel) {
                 p2pBroadcastChannel.postMessage({ type: "EVICT_SIGNAL" });
                 p2pBroadcastChannel.close();
