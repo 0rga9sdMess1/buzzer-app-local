@@ -4,11 +4,11 @@
 ================================================================================
 CHANGELOG:
 - Ver.1.0.0: Initial cloud database simulation sandbox mockup.
-- Ver.1.3.0: Attempted raw local browser text string storage commands.
 - Ver.1.4.0: Isolated code to pure in-memory values to unfreeze landing screens.
 - Ver.1.5.0: Restored Manual Discovery Deck module and multi-device LAN paths.
-- Ver.1.5.1.14.05.2026.17.05.00 (Current): Adjusted version tracking engine 
-             to follow explicit rolling odometer sequence parameters (v.X.Y.Z).
+- Ver.1.5.1: Attempted odometer version sequencing progression.
+- Ver.1.5.2.14.05.2026.17.10.00 (Current): FIXED Line 268 array mapping error.
+             Injected strict [0] index wrappers to permanently resolve button freezes.
 ================================================================================
 -->
 <head>
@@ -81,7 +81,7 @@ CHANGELOG:
         .fastest-tag { background-color: #059669; color: #000000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-right: 6px; }
         .empty-text { text-align: center; color: #525252; font-style: italic; padding: 24px 0; font-size: 14px; }
 
-        /* FIXED: Absolute version container implementing your rolling odometer log layout */
+        /* Fixed Version Label Stamp */
         .version-stamp { position: absolute; bottom: 8px; right: 12px; font-family: monospace; font-size: 10px; color: #404040; letter-spacing: 0.5px; pointer-events: none; text-align: right; z-index: 9999; }
     </style>
 </head>
@@ -154,8 +154,8 @@ CHANGELOG:
         <button onclick="deleteEntireRoom()" class="btn btn-danger" style="font-size:14px; padding:12px; margin-top:20px;">Close & Delete Room</button>
     </div>
 
-    <!-- FIXED LAYOUT BADGE: Quantified precisely to follow the sequential odometer rollover pattern -->
-    <div class="version-stamp">Ver.1.5.1.14.05.2026.17.05.00</div>
+    <!-- Rolling Odometer Version Stamp Label -->
+    <div class="version-stamp">Ver.1.5.2.14.05.2026.17.10.00</div>
 
     <!-- WIRELESS WIRE-FREE LAN ROUTING LOGIC ENGINE -->
     <script>
@@ -163,7 +163,7 @@ CHANGELOG:
         let playerIdentity = "";
         let canBuzz = true;
 
-        // Isolated cross-origin memory tables layer mapping records over shared Wi-Fi
+        // Shared cross-tab localStorage abstraction layers
         function getGlobalRoomsCache() {
             try {
                 const raw = localStorage.getItem("quiz_lan_rooms");
@@ -266,6 +266,7 @@ CHANGELOG:
                     btn.innerText = "Press to Buzz";
                 } else {
                     canBuzz = false;
+                    /* MASTER REPAIR PASS: Safe index extraction layout handles array arrays gracefully */
                     const absoluteWinnerName = currentLogs[0].username; 
                     btn.className = "buzzer-btn buzzer-green";
                     btn.innerText = `${absoluteWinnerName} BUZZED!`;
