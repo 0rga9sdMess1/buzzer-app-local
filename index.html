@@ -363,11 +363,6 @@ button{
     </button>
 
 </div>
-
-<div class="version">
-Ver.1.0.0.14.05.2026.19.01.00
-</div>
-
 <script>
 
 /* =========================
@@ -375,17 +370,17 @@ VERSION
 ========================= */
 
 const APP_VERSION =
-"Ver.1.0.0.14.05.2026.19.01.00";
+"Ver.1.0.1.14.05.2026.20.05.00";
 
 /* =========================
 SUPABASE CONFIG
 ========================= */
 
 const SUPABASE_URL =
-"https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
+"PASTE_YOUR_PROJECT_URL_HERE/rest/v1";
 
 const SUPABASE_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg";
+"PASTE_YOUR_ANON_KEY_HERE";
 
 /* =========================
 HEADERS
@@ -410,6 +405,146 @@ let playerLoop = null;
 let adminLoop = null;
 
 let canBuzz = true;
+
+let alreadyAnnouncedWinner = false;
+
+/* =========================
+VERSION DISPLAY
+========================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    ()=>{
+        const versionDiv =
+            document.querySelector(".version");
+
+        if(versionDiv){
+            versionDiv.innerText =
+                APP_VERSION;
+        }
+    }
+);
+
+/* =========================
+SOUNDS
+========================= */
+
+const audioCtx =
+    new (
+        window.AudioContext ||
+        window.webkitAudioContext
+    )();
+
+function playWinnerSound(){
+
+    const osc =
+        audioCtx.createOscillator();
+
+    const gain =
+        audioCtx.createGain();
+
+    osc.type = "triangle";
+
+    osc.frequency.setValueAtTime(
+        880,
+        audioCtx.currentTime
+    );
+
+    gain.gain.setValueAtTime(
+        0.08,
+        audioCtx.currentTime
+    );
+
+    osc.connect(gain);
+
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+
+    osc.stop(
+        audioCtx.currentTime + 0.12
+    );
+}
+
+function playLoserSound(){
+
+    const osc =
+        audioCtx.createOscillator();
+
+    const gain =
+        audioCtx.createGain();
+
+    osc.type = "sawtooth";
+
+    osc.frequency.setValueAtTime(
+        180,
+        audioCtx.currentTime
+    );
+
+    osc.frequency.exponentialRampToValueAtTime(
+        90,
+        audioCtx.currentTime + 0.15
+    );
+
+    gain.gain.setValueAtTime(
+        0.09,
+        audioCtx.currentTime
+    );
+
+    osc.connect(gain);
+
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+
+    osc.stop(
+        audioCtx.currentTime + 0.15
+    );
+}
+
+/* =========================
+ANIMATION
+========================= */
+
+function triggerWinnerAnimation(){
+
+    document.body.animate(
+        [
+            {
+                background:"#0b0b0b"
+            },
+            {
+                background:"#063"
+            },
+            {
+                background:"#0b0b0b"
+            }
+        ],
+        {
+            duration:600
+        }
+    );
+
+    const btn =
+        document.getElementById("buzzBtn");
+
+    btn.animate(
+        [
+            {
+                transform:"scale(1)"
+            },
+            {
+                transform:"scale(1.08)"
+            },
+            {
+                transform:"scale(1)"
+            }
+        ],
+        {
+            duration:500
+        }
+    );
+}
 
 /* =========================
 SCREEN SWITCH
@@ -546,7 +681,7 @@ async function joinGuest(){
         playerLoop =
             setInterval(
                 syncPlayer,
-                1000
+                700
             );
 
     }catch(err){
@@ -567,6 +702,8 @@ async function buzz(){
 
     canBuzz = false;
 
+    alreadyAnnouncedWinner = false;
+
     if(navigator.vibrate){
 
         navigator.vibrate(100);
@@ -579,43 +716,23 @@ async function buzz(){
         "buzzer green";
 
     btn.innerText =
-        "BUZZED!";
+        "BUZZING...";
 
     try{
 
-        const existingResponse =
-            await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&order=buzzed_at.asc`,
-                {
-                    headers:HEADERS
-                }
-            );
-
-        const existingBuzzes =
-            await existingResponse.json();
-
-        const alreadyBuzzed =
-            existingBuzzes.some(
-                item=>
-                item.client_id === clientId
-            );
-
-        if(!alreadyBuzzed){
-
-            await fetch(
-                `${SUPABASE_URL}/buzzes`,
-                {
-                    method:"POST",
-                    headers:HEADERS,
-                    body:JSON.stringify({
-                        room_id:"MASTER_SESSION",
-                        username:username,
-                        client_id:clientId,
-                        type:"buzz"
-                    })
-                }
-            );
-        }
+        await fetch(
+            `${SUPABASE_URL}/buzzes`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    room_id:"MASTER_SESSION",
+                    username:username,
+                    client_id:clientId,
+                    type:"buzz"
+                })
+            }
+        );
 
     }catch(e){}
 }
@@ -627,6 +744,34 @@ PLAYER SYNC
 async function syncPlayer(){
 
     try{
+
+        /* ROOM EXISTENCE CHECK */
+
+        const roomCheck =
+            await fetch(
+                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roomData =
+            await roomCheck.json();
+
+        if(roomData.length === 0){
+
+            clearInterval(playerLoop);
+
+            alert(
+                "The host has ended the Party... hope you had fun!"
+            );
+
+            location.reload();
+
+            return;
+        }
+
+        /* BUZZ CHECK */
 
         const response =
             await fetch(
@@ -646,6 +791,8 @@ async function syncPlayer(){
 
             canBuzz = true;
 
+            alreadyAnnouncedWinner = false;
+
             btn.className =
                 "buzzer red";
 
@@ -660,15 +807,33 @@ async function syncPlayer(){
             btn.className =
                 "buzzer green";
 
-            if(winner.client_id === clientId){
+            if(
+                winner.client_id === clientId
+            ){
 
                 btn.innerText =
-                    "YOU BUZZED";
+                    "YOU BUZZED FIRST";
+
+                if(!alreadyAnnouncedWinner){
+
+                    alreadyAnnouncedWinner = true;
+
+                    playWinnerSound();
+
+                    triggerWinnerAnimation();
+                }
 
             }else{
 
                 btn.innerText =
                     `${winner.username} BUZZED`;
+
+                if(!alreadyAnnouncedWinner){
+
+                    alreadyAnnouncedWinner = true;
+
+                    playLoserSound();
+                }
             }
         }
 
@@ -682,8 +847,6 @@ ADMIN REFRESH
 async function refreshAdmin(){
 
     try{
-
-        /* buzz feed */
 
         const buzzResponse =
             await fetch(
@@ -747,11 +910,9 @@ async function refreshAdmin(){
             });
         }
 
-        /* roster */
-
         const rosterResponse =
             await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username,client_id`,
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username`,
                 {
                     headers:HEADERS
                 }
@@ -814,88 +975,9 @@ async function resetBuzzers(){
                 headers:HEADERS
             }
         );
-
-    }catch(e){}
-}
-
-/* =========================
-LEAVE SESSION
-========================= */
-
-async function leaveSession(){
-
-    const confirmLeave =
-        confirm(
-            "Do you really want to leave this exciting session?"
-        );
-
-    if(!confirmLeave) return;
-
-    clearInterval(playerLoop);
-
-    try{
-
-        await fetch(
-            `${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
-            {
-                method:"DELETE",
-                headers:HEADERS
-            }
-        );
-
-    }catch(e){}
-
-    location.reload();
-}
-
-/* =========================
-CLOSE SESSION
-========================= */
-
-async function closeSession(){
-
-    const confirmClose =
-        confirm(
-            "Are you sure you want to end this session?"
-        );
-
-    if(!confirmClose) return;
-
-    clearInterval(adminLoop);
-
-    try{
-
-        await fetch(
-            `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
-            {
-                method:"DELETE",
-                headers:HEADERS
-            }
-        );
-
-        await fetch(
-            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
-            {
-                method:"DELETE",
-                headers:HEADERS
-            }
-        );
-
-        alert(
-            "Session closed"
-        );
-
-        location.reload();
-
-    }catch(err){
-
-        alert(
-            "Failed to close session"
-        );
-    }
-}
-
 </script>
+        
+
 
 </body>
 </html>
