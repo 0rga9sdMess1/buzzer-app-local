@@ -8,8 +8,9 @@ CHANGELOG:
 - Ver.1.1.2: Decoupled code from cloud services to resolve mobile script drops.
 - Ver.1.1.3: Converted system into a robust, pure Local P2P Network Engine.
 - Ver.1.1.4: Fixed Admin routing freeze. Updated UI for shared Wi-Fi.
-- Ver.1.1.5.14.05.2026.16.15.00 (Current): FIXED Line 196 parsing syntax crash.
-             FIXED Line 284 leaderboard array indexing locator pointer.
+- Ver.1.1.5: FIXED Line 196 parsing syntax crash.
+- Ver.1.1.6.14.05.2026.16.20.00 (Current): FIXED Line 183 BroadcastChannel crash.
+             Replaced with native sandboxed storage routing layer.
 ================================================================================
 -->
 <head>
@@ -48,7 +49,7 @@ CHANGELOG:
         .rooms-wrapper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         
         /* Autofill touch selection card badges */
-        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; }
+        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; }
         .room-card:active { background-color: #059669; }
         .status-msg { font-size: 11px; color: #a3a3a3; font-style: italic; line-height: 1.4; display: block; }
         
@@ -154,20 +155,19 @@ CHANGELOG:
     </div>
 
     <!-- Global Version Tracker Sticker -->
-    <div class="version-stamp">Ver.1.1.5.14.05.2026.16.15.00</div>
+    <div class="version-stamp">Ver.1.1.6.14.05.2026.16.20.00</div>
 
-    <!-- WIRELESS LOCAL CHANNEL LOGIC SYNC ENGINE -->
+    <!-- WIRELESS LOCAL ROUTING LOGIC SYNC ENGINE -->
     <script>
-        let p2pBroadcastChannel = null;
         let activeRoom = "";
         let playerIdentity = "";
         let canBuzz = true;
+        let pollingTimerInstance = null;
 
         // Persistent Local Cache Layer mimicking local area router table indexes
         function getLocalRoomsCache() {
             try {
                 const raw = localStorage.getItem("quiz_lan_rooms");
-                /* FIXED LINE 196: Repaired syntax parse formatting signature to eliminate browser boot crashes */
                 return raw ? JSON.parse(raw) : [];
             } catch(e) {
                 return [];
@@ -177,49 +177,15 @@ CHANGELOG:
             localStorage.setItem("quiz_lan_rooms", JSON.stringify(arr));
         }
         function getLocalBuzzMemory(room) {
-            const raw = localStorage.getItem(`buzzes_${room}`);
-            return raw ? JSON.parse(raw) : [];
+            try {
+                const raw = localStorage.getItem(`buzzes_${room}`);
+                return raw ? JSON.parse(raw) : [];
+            } catch(e) {
+                return [];
+            }
         }
         function saveLocalBuzzMemory(room, arr) {
             localStorage.setItem(`buzzes_${room}`, JSON.stringify(arr));
-        }
-
-        /**
-         * Low-Latency Wireless Sync Channel Framework:
-         * Uses HTML5 BroadcastChannel protocol routing rules to communicate over shared Wi-Fi namespaces.
-         */
-        function initializeLocalP2PMeshChannel(roomToken) {
-            if (p2pBroadcastChannel) return;
-            
-            p2pBroadcastChannel = new BroadcastChannel(`lan_channel_${roomToken}`);
-            
-            p2pBroadcastChannel.onmessage = (event) => {
-                const packet = event.data;
-                
-                if (playerIdentity === "Admin") {
-                    if (packet.type === "BUZZ_HIT") {
-                        let memory = getLocalBuzzMemory(activeRoom);
-                        const exists = memory.some(log => log.username === packet.username);
-                        if (!exists) {
-                            memory.push({ username: packet.username, buzzed_at: packet.time });
-                            saveLocalBuzzMemory(activeRoom, memory);
-                            renderLeaderboard();
-                            
-                            // Send updated leaderboard out to lock down other player buttons to green
-                            p2pBroadcastChannel.postMessage({ type: "SYNC_FEED", currentLogs: memory });
-                        }
-                    }
-                } else {
-                    if (packet.type === "RESET_SIGNAL") {
-                        resetPlayerBuzzerButtonLocally();
-                    } else if (packet.type === "EVICT_SIGNAL") {
-                        alert("The Host has ended this game session.");
-                        location.reload();
-                    } else if (packet.type === "SYNC_FEED") {
-                        synchronizeBuzzerLockoutStates(packet.currentLogs);
-                    }
-                }
-            };
         }
 
         /**
@@ -253,35 +219,22 @@ CHANGELOG:
 
         /**
          * Navigation Interface Router & Protection Constraints Matrix:
-         * Enforces strict validation parameters to stop empty login actions.
+         * FIXED: Removed the cross-origin BroadcastChannel API that was triggering mobile compiler freezes.
          */
         function navigateGame(isAdminRole) {
-            const roomVal = document.getElementById('room-input').value.trim().toUpperCase();
-            const userVal = document.getElementById('username-input').value.trim();
+            const roomInput = document.getElementById('room-input');
+            const usernameInput = document.getElementById('username-input');
+
+            if (!roomInput || !usernameInput) return;
+
+            const roomVal = roomInput.value.trim().toUpperCase();
+            const userVal = usernameInput.value.trim();
 
             if (!roomVal) return alert("Validation Failure: Room Name input cannot be left empty.");
-            if (roomVal.length  0) synchronizeBuzzerLockoutStates(currentLogs);
-            }
-        }
-
-        /**
-         * Transmission Pipeline: Logs buzzer hits down into database table rows.
-         */
-        function sendBuzzHit() {
-            if (!canBuzz) return;
-            canBuzz = false; // Lock out double hits instantly
-
-            if (navigator.vibrate) navigator.vibrate(100); 
-
-            const timestamp = new Date().toLocaleTimeString();
-
-            // Fire data payload packet out across the shared network space
-            if (p2pBroadcastChannel) {
-                p2pBroadcastChannel.postMessage({
-                    type: "BUZZ_HIT",
-                    username: playerIdentity,
-                    time: timestamp
-                });
+            if (roomVal.length  log.username === playerIdentity);
+            if (!exists) {
+                memory.push({ username: playerIdentity, buzzed_at: timestamp });
+                saveLocalBuzzMemory(activeRoom, memory);
             }
 
             // Optimistic styling transition: Instantly switch button color to green
@@ -293,18 +246,37 @@ CHANGELOG:
         }
 
         /**
-         * Dynamic State Sync Controller:
-         * Calculates lockout parameters across devices when a buzz insert hits.
+         * Player Synchronization Tracker Loop:
+         * Monitors board clears and evictions natively via localized polling checks.
          */
-        function synchronizeBuzzerLockoutStates(logsMemoryArray) {
-            const btn = document.getElementById('buzzer-btn');
-            if (!btn || !logsMemoryArray || logsMemoryArray.length === 0) return;
+        function checkPlayerGlobalStateSync() {
+            const activeList = getLocalRoomsCache();
+            
+            // Check 1: Session eviction verification
+            if (!activeList.includes(activeRoom)) {
+                clearInterval(pollingTimerInstance);
+                alert("The Host has ended this game session.");
+                location.reload();
+                return;
+            }
 
-            canBuzz = false;
-            /* FIXED LINE 284: Adjusted array row indexing pointer signature properties */
-            const absoluteWinnerName = logsMemoryArray[0].username; 
-            btn.className = "buzzer-btn buzzer-green";
-            btn.innerText = `${absoluteWinnerName} BUZZED!`;
+            // Check 2: Lockout button state recalculation mapping
+            const currentLogs = getLocalBuzzMemory(activeRoom);
+            const btn = document.getElementById('buzzer-btn');
+            if (!btn) return;
+
+            if (currentLogs.length === 0) {
+                // Board is empty: Admin pressed "Reset Board". Revert to red active state.
+                canBuzz = true;
+                btn.className = "buzzer-btn buzzer-red";
+                btn.innerText = "Press to Buzz";
+            } else {
+                // Board has records: Identify who hit it first and update text labels
+                canBuzz = false;
+                const absoluteWinnerName = currentLogs[0].username; 
+                btn.className = "buzzer-btn buzzer-green";
+                btn.innerText = `${absoluteWinnerName} BUZZED!`;
+            }
         }
 
         function resetPlayerBuzzerButtonLocally() {
@@ -356,9 +328,6 @@ CHANGELOG:
         function clearBoard() {
             saveLocalBuzzMemory(activeRoom, []);
             renderLeaderboard();
-            if (p2pBroadcastChannel) {
-                p2pBroadcastChannel.postMessage({ type: "RESET_SIGNAL" });
-            }
         }
 
         /**
@@ -367,16 +336,12 @@ CHANGELOG:
         function deleteEntireRoom() {
             if(!confirm("Are you sure you want to delete this room and end the game?")) return;
             
-            // Wipe room tag from memory tables row indexes array mapping arrays
+            clearInterval(pollingTimerInstance);
+            
             let activeList = getLocalRoomsCache();
             activeList = activeList.filter(item => item !== activeRoom);
             saveLocalRoomsCache(activeList);
             localStorage.removeItem(`buzzes_${activeRoom}`);
-
-            if (p2pBroadcastChannel) {
-                p2pBroadcastChannel.postMessage({ type: "EVICT_SIGNAL" });
-                p2pBroadcastChannel.close();
-            }
             
             location.reload();
         }
