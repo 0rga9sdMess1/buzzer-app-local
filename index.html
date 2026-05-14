@@ -3,348 +3,353 @@
 <!--
 ================================================================================
 CHANGELOG:
-- Ver.1.0.0: Initial cloud database simulation sandbox mockup.
-- Ver.1.4.0: Isolated code to pure in-memory values to unfreeze landing screens.
-- Ver.1.5.0: Restored Manual Discovery Deck module and multi-device LAN paths.
-- Ver.1.5.2: Attempted odometer version sequencing progression.
-- Ver.1.5.3.14.05.2026.17.15.00 (Current): FIXED Line 333 array indexing bug.
-             Wrapped all storage synchronization layers in protective gates
-             to permanently unfreeze screen navigation buttons.
+- Ver.1.0.0 - 1.5.3: Array-based multi-room backend execution attempts (Retired).
+- Ver.1.6.0.14.05.2026.17.30.00 (Current): Complete structural reboot. Stripped 
+             all room complexities. Hardcoded "BlackMirror" password protection, 
+             session validation locks, active participant roster tracking, 
+             and clean chronological millisecond buzzer indexing up to 10.
 ================================================================================
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quiz Buzzer - Stable LAN Edition</title>
+    <title>Quiz Buzzer - Master Edition</title>
     
-    <!-- Self-contained production build assets. No external script dependencies are required. -->
     <style>
-        /* Global touch optimizations to ensure layout target sizes display perfectly on phone screens */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: #0b0b0b; color: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-x: hidden; position: relative; }
         
-        /* Application Display Viewports */
         .screen { width: 100%; max-width: 400px; background-color: #161616; border: 1px solid #262626; border-radius: 24px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: none; }
         .screen.active { display: block; }
         
-        /* Typography Elements Layout */
         h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; color: #ffffff; }
         h1 span { color: #ef4444; }
         h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
         .subtitle { font-size: 12px; color: #a3a3a3; font-family: monospace; text-transform: uppercase; margin-bottom: 16px; }
-        .section-title { font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: block; }
+        .section-title { font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; margin-top: 12px; }
         
-        /* Entry Input Fields Matrix */
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
         input { width: 100%; background-color: #222; border: 1px solid #333; border-radius: 12px; padding: 14px; color: #ffffff; font-size: 16px; }
         input:focus { outline: none; border-color: #ef4444; }
-        input.uppercase { text-transform: uppercase; font-family: monospace; letter-spacing: 2px; }
         
-        /* Room Discovery Deck Component Layout */
-        .room-deck { background-color: #1c1c1c; border: 1px dashed #333; border-radius: 14px; padding: 14px; margin-bottom: 24px; }
-        .deck-title { font-size: 10px; font-weight: 700; color: #737373; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: block; }
-        .rooms-wrapper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        
-        /* Autofill touch selection card badge tokens */
-        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; transition: background-color 0.1s; }
-        .room-card:active { background-color: #059669; }
-        .status-msg { font-size: 11px; color: #a3a3a3; font-style: italic; line-height: 1.4; display: block; }
-        
-        /* Core Utility Action Buttons Framework */
         .btn { display: block; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; text-align: center; margin-bottom: 12px; transition: transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background-color: #ffffff; color: #000000; }
         .btn-secondary { background-color: #222222; color: #d4d4d4; border: 1px solid #333333; }
-        .btn-danger { background-color: #ef4444; color: #ffffff; margin-bottom: 6px; }
-        .btn-small { padding: 8px 12px; font-size: 11px; width: auto; display: inline-block; margin-bottom: 0; background-color: #262626; color: #a3a3a3; border: 1px solid #333; }
+        .btn-danger { background-color: #ef4444; color: #ffffff; }
         
-        /* Real-time Layout Meta Tracking Badges */
         .meta-container { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
         .badge { background-color: #222; border: 1px solid #333; padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; color: #a3a3a3; }
         
-        /* Mechanical 3D Response Buzzer Setup Matrix */
-        .buzzer-wrapper { display: flex; justify-content: center; align-items: center; height: 280px; }
+        .buzzer-wrapper { display: flex; justify-content: center; align-items: center; height: 260px; }
         .buzzer-btn { width: 200px; height: 200px; border-radius: 50%; font-size: 22px; font-weight: 800; text-transform: uppercase; border: none; color: #ffffff; cursor: pointer; outline: none; transition: all 0.1s; }
         
         .buzzer-red { background-color: #dc2626; border-bottom: 12px solid #991b1b; box-shadow: 0 12px 0 #991b1b, 0 20px 30px rgba(0,0,0,0.5); }
         .buzzer-red:active { transform: translateY(8px); border-bottom: 4px solid #991b1b; box-shadow: 0 4px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.3); }
-        
         .buzzer-green { background-color: #059669; border-bottom: 12px solid #047857; box-shadow: 0 12px 0 #047857, 0 20px 30px rgba(0,0,0,0.4); pointer-events: none; }
         
-        /* Leaderboard entries lists grid framework */
-        .leaderboard-list { max-height: 260px; overflow-y: auto; }
-        .row-entry { display: flex; justify-content: space-between; align-items: center; padding: 14px; background-color: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 12px; margin-bottom: 8px; }
+        .panel-box { background-color: #1a1a1a; border: 1px solid #262626; border-radius: 14px; padding: 12px; max-height: 160px; overflow-y: auto; margin-bottom: 14px; }
+        .row-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background-color: #222; border: 1px solid #333; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
         .row-entry.winner { background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #34d399; font-weight: bold; }
-        .row-left { display: flex; align-items: center; gap: 10px; }
-        .rank { font-family: monospace; font-size: 12px; color: #737373; }
-        .timestamp { font-family: monospace; font-size: 11px; color: #737373; }
         .fastest-tag { background-color: #059669; color: #000000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-right: 6px; }
-        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 24px 0; font-size: 14px; }
-
-        /* Rolling Odometer Version Stamp Label Positioning Layout */
-        .version-stamp { position: absolute; bottom: 8px; right: 12px; font-family: monospace; font-size: 10px; color: #404040; letter-spacing: 0.5px; pointer-events: none; text-align: right; z-index: 9999; }
+        .timestamp { font-family: monospace; font-size: 11px; color: #a3a3a3; }
+        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 12px 0; font-size: 13px; }
+        
+        .roster-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        .roster-card { background-color: #222; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #d4d4d4; font-weight: 600; }
+        
+        .version-stamp { position: absolute; bottom: 8px; right: 12px; font-family: monospace; font-size: 10px; color: #404040; pointer-events: none; text-align: right; z-index: 9999; }
     </style>
 </head>
 <body>
 
-    <!-- SCREEN 1: LANDING CONSOLE VIEW -->
-    <div id="screen-landing" class="screen active">
+    <!-- VIEW 1: HOME SHEET CONSOLE -->
+    <div id="view-home" class="screen active">
         <h1>QUIZ<span>BUZZER</span></h1>
-        
-        <!-- Local Network Coordination Sub-Module Panel Card -->
-        <div class="room-deck">
-            <span class="deck-title">Shared Wi-Fi Play Instructions</span>
-            <span class="status-msg">
-                1. Make sure your friends are on your **exact same Wi-Fi network**.<br>
-                2. Host clicks Admin first. Guests click Scan for Rooms to connect.
-            </span>
-        </div>
-
-        <!-- Room Discovery Panel Box Module: Manual triggering bypasses initial background script thread lockouts -->
-        <div class="room-deck" style="margin-top: -12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span class="deck-title" style="margin-bottom:0;">Room Discovery Panel</span>
-                <button onclick="manuallyScanActiveRooms()" class="btn btn-small">Scan for Rooms</button>
-            </div>
-            <div id="live-rooms-wrapper" class="rooms-wrapper">
-                <span class="status-msg" style="font-style: italic; color: #525252;">Tap scan to find game codes...</span>
-            </div>
-        </div>
-
         <div class="form-group">
-            <label>Room Name</label>
-            <input type="text" id="room-input" placeholder="E.G. ROOM1" class="uppercase">
-        </div>
-        <div class="form-group">
-            <label>Your Name</label>
+            <label>Your Username</label>
             <input type="text" id="username-input" placeholder="E.g. Alex">
         </div>
-        <button onclick="navigateGame(false)" class="btn btn-primary">Join as Player</button>
-        <button onclick="navigateGame(true)" class="btn btn-secondary">Host as Admin</button>
+        <button onclick="navigateGuestJoinFlow()" class="btn btn-primary">Join as Guest</button>
+        <button onclick="switchDirectLayoutView('view-password')" class="btn btn-secondary">Host as Admin</button>
     </div>
 
-    <!-- SCREEN 2: PLAYER INTERACTIVE BUZZER INTERFACE VIEW -->
-    <div id="screen-player" class="screen">
+    <!-- VIEW 2: HARDCODED GATE PASSWORD PANEL -->
+    <div id="view-password" class="screen">
+        <h1>ADMIN<span>LOCK</span></h1>
+        <div class="form-group">
+            <label>Enter Master Password</label>
+            <input type="password" id="password-input" placeholder="••••••••">
+        </div>
+        <button onclick="validateAdminSecretPassword()" class="btn btn-primary">Verify Access</button>
+        <button onclick="switchDirectLayoutView('view-home')" class="btn btn-secondary">Return to Home</button>
+    </div>
+
+    <!-- VIEW 3: GUEST INTERACTIVE RESPONDENT BUZZER CARD -->
+    <div id="view-player" class="screen">
         <div class="meta-container">
-            <div class="badge">ROOM: <strong id="p-room">-</strong></div>
-            <div class="badge">USER: <strong id="p-name">-</strong></div>
+            <div class="badge">SESSION: <strong style="color:#34d399;">LIVE</strong></div>
+            <div class="badge">PLAYER: <strong id="p-name-badge">-</strong></div>
         </div>
         <div class="buzzer-wrapper">
-            <button id="buzzer-btn" onclick="sendBuzzHit()" class="buzzer-btn buzzer-red">Press to Buzz</button>
+            <button id="buzzer-btn" onclick="executePlayerBuzzHitTransmission()" class="buzzer-btn buzzer-red">Press to Buzz</button>
         </div>
-        <!-- Safe Sync Hook: Reads master table array states cleanly without deleting row items -->
-        <button onclick="syncPlayerBuzzerDisplayNatively()" class="btn btn-secondary" style="margin-top: 16px; padding: 12px; font-size:14px;">Sync Buzzer Status 🔄</button>
+        <button onclick="syncPlayerBuzzerStateWithHostCommand()" class="btn btn-secondary" style="margin-top: 12px; padding: 12px; font-size: 14px;">Sync Buzzer Status 🔄</button>
     </div>
 
-    <!-- SCREEN 3: HOST CONTROL MASTER DASHBOARD VIEW -->
-    <div id="screen-admin" class="screen" style="max-width: 500px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid #262626; padding-bottom: 16px;">
+    <!-- VIEW 4: MASTER CONTROL BOARD ADMIN FEED -->
+    <div id="view-admin" class="screen" style="max-width: 480px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #262626; padding-bottom: 12px;">
             <div>
-                <h2>Admin Dashboard</h2>
-                <div class="subtitle">Room: <span id="a-room" style="color:#ef4444; font-weight:bold;">-</span></div>
+                <h2>Host Control Center</h2>
+                <div class="subtitle" style="font-size:10px; color:#34d399; font-weight:bold;">Master Session Online</div>
             </div>
-            <button onclick="clearBoard()" class="btn btn-primary" style="width: auto; padding: 10px 18px; margin: 0; font-size: 13px;">Reset Board</button>
+            <button onclick="clearMasterLeaderboardFeed()" class="btn btn-primary" style="width: auto; padding: 10px 16px; margin: 0; font-size: 13px;">Reset Board</button>
         </div>
         
-        <span class="section-title">Buzzer Feed Order</span>
-        <button onclick="renderLeaderboard()" class="btn btn-secondary" style="padding:12px; font-size:13px; margin-bottom:14px; width:100%;">Refresh Responses Feed 🔄</button>
-        
-        <div id="leaderboard" class="leaderboard-list">
+        <span class="section-title">Buzzer Feed Order (Max 10 Response Slots)</span>
+        <button onclick="refreshAdminDashboardPanelsNatively()" class="btn btn-secondary" style="padding: 10px; font-size: 12px; margin-bottom: 10px; width: 100%;">Refresh Logs Feed 🔄</button>
+        <div id="admin-leaderboard-box" class="panel-box">
             <div class="empty-text">Waiting for players to buzz...</div>
         </div>
-        <button onclick="deleteEntireRoom()" class="btn btn-danger" style="font-size:14px; padding:12px; margin-top:20px;">Close & Delete Room</button>
+        
+        <span class="section-title">Active Connected Participants Roster</span>
+        <div id="admin-roster-box" class="panel-box" style="background-color: #121212;">
+            <div class="empty-text">No users active...</div>
+        </div>
+        
+        <button onclick="terminateMasterSession()" class="btn btn-danger" style="font-size: 14px; padding: 12px; margin-top: 12px;">Close & Delete Session</button>
     </div>
 
-    <!-- Rolling Odometer Version Stamp Label -->
-    <div class="version-stamp">Ver.1.5.3.14.05.2026.17.15.00</div>
+    <!-- Rolling Odometer System Sequence Token Stamp -->
+    <div class="version-stamp">Ver.1.6.0.14.05.2026.17.30.00</div>
 
-    <!-- WIRELESS WIRE-FREE LAN ROUTING LOGIC ENGINE -->
+    <!-- NATIVE PARSING MECHANICS CONTROLLER SCRIPT -->
     <script>
-        let activeRoom = "";
-        let playerIdentity = "";
-        let canBuzz = true;
-
-        // Shared cross-tab memory abstraction wrappers
-        function getGlobalRoomsCache() {
-            try {
-                const raw = localStorage.getItem("quiz_lan_rooms");
-                return raw ? JSON.parse(raw) : [];
-            } catch(e) { return []; }
-        }
-        function saveGlobalRoomsCache(arr) {
-            localStorage.setItem("quiz_lan_rooms", JSON.stringify(arr));
-        }
-        function getGlobalBuzzMemory(room) {
-            try {
-                const raw = localStorage.getItem(`buzzes_${room}`);
-                return raw ? JSON.parse(raw) : [];
-            } catch(e) { return []; }
-        }
-        function saveGlobalBuzzMemory(room, arr) {
-            localStorage.setItem(`buzzes_${room}`, JSON.stringify(arr));
-        }
+        let localPlayerIdentityString = "";
 
         /**
-         * Manual Discovery Scanner Engine:
-         * Triggered only when users press the manual button. Pulls records safely.
+         * Clean Viewport Router:
+         * Switches visibility parameters instantly without hitting storage loop barriers.
          */
-        function manuallyScanActiveRooms() {
+        function switchDirectLayoutView(targetViewId) {
             try {
-                const container = document.getElementById('live-rooms-wrapper');
-                if(!container) return;
-
-                const activeList = getGlobalRoomsCache();
-                if(activeList.length === 0) {
-                    container.innerHTML = '<span class="status-msg" style="color:#ef4444;">No room has been created yet.</span>';
-                    return;
-                }
-
-                container.innerHTML = ""; 
-                activeList.forEach(roomCode => {
-                    const badge = document.createElement('span');
-                    badge.className = 'room-card';
-                    badge.innerText = `${roomCode} [Load]`;
-                    
-                    badge.onclick = () => {
-                        const inputField = document.getElementById('room-input');
-                        if(inputField) {
-                            inputField.value = roomCode;
-                        }
-                    };
-                    container.appendChild(badge);
+                const views = ['view-home', 'view-password', 'view-player', 'view-admin'];
+                views.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none';
                 });
-            } catch(err) {
-                alert("Discovery Processing Exception: " + err.message);
-            }
+                const target = document.getElementById(targetViewId);
+                if(target) target.style.display = 'block';
+            } catch(e) { console.error(e); }
         }
 
         /**
-         * Navigation Interface Router & Protection Constraints Matrix:
+         * Password Validation Interceptor:
+         * Enforces strict compliance against hardcoded asset string token variables.
          */
-        function navigateGame(isAdminRole) {
-            try {
-                const roomVal = document.getElementById('room-input').value.trim().toUpperCase();
-                const userVal = document.getElementById('username-input').value.trim();
+        function validateAdminSecretPassword() {
+            const secretInput = document.getElementById('password-input');
+            if(!secretInput) return;
 
-                if (!roomVal) return alert("Validation Error: Room Name input cannot be left empty.");
-                if (roomVal.length  log.username === playerIdentity);
-                if (!exists) {
-                    memory.push({ username: playerIdentity, buzzed_at: timestamp });
-                    saveGlobalBuzzMemory(activeRoom, memory);
-                }
+            const entryTextString = secretInput.value.trim();
 
-                const btn = document.getElementById('buzzer-btn');
-                if(btn) {
-                    btn.className = "buzzer-btn buzzer-green";
-                    btn.innerText = `${playerIdentity} BUZZED!`;
-                }
-            } catch(e) {
-                alert("Buzzer Signal Processing Error: " + e.message);
-            }
-        }
-
-        /**
-         * Click-Driven Player Synchronizer:
-         * Reads the data row out of the shared partition memory safely.
-         */
-        function syncPlayerBuzzerDisplayNatively() {
-            try {
-                const activeList = getGlobalRoomsCache();
+            if (entryTextString === "BlackMirror") {
+                // Success path: Write initialization variable to unlock guest logging gates
+                localStorage.setItem("quiz_master_session_status", "ACTIVE");
+                localStorage.setItem("quiz_master_buzzes_raw", "[]");
+                localStorage.setItem("quiz_master_roster_raw", "[]");
                 
-                if (!activeList.includes(activeRoom)) {
-                    alert("The Host has closed this gaming room session.");
-                    location.reload();
-                    return;
+                secretInput.value = ""; // Clear input field form parameters
+                switchDirectLayoutView('view-admin');
+                refreshAdminDashboardPanelsNatively();
+            } else {
+                alert("That is the wrong password , but Shut up and Dance");
+            }
+        }
+
+        /**
+         * Guest Validation Entry Pipeline:
+         * Checks the master state slot before allowing players to switch screens.
+         */
+        function navigateGuestJoinFlow() {
+            const userInput = document.getElementById('username-input');
+            if(!userInput) return;
+
+            const nameToken = userInput.value.trim();
+
+            if (!nameToken) return alert("Validation Failure: Username field input is required to connect.");
+            if (nameToken.toUpperCase() === "ADMIN") return alert("Validation Failure: The username 'Admin' is reserved.");
+
+            const sessionGateStatus = localStorage.getItem("quiz_master_session_status");
+
+            // Structural Access Guard Constraint Check
+            if (sessionGateStatus !== "ACTIVE") {
+                return alert("Wait for the host to start the buzzing session");
+            }
+
+            localPlayerIdentityString = nameToken;
+            document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
+
+            // Commit user name into the shared participant cache file row string array
+            try {
+                let rosterRaw = localStorage.getItem("quiz_master_roster_raw");
+                let roster = rosterRaw ? JSON.parse(rosterRaw) : [];
+                if (!roster.includes(localPlayerIdentityString)) {
+                    roster.push(localPlayerIdentityString);
+                    localStorage.setItem("quiz_master_roster_raw", JSON.stringify(roster));
                 }
+            } catch(e) { console.error(e); }
 
-                const currentLogs = getGlobalBuzzMemory(activeRoom);
+            switchDirectLayoutView('view-player');
+            syncPlayerBuzzerDisplayState();
+        }
+
+        /**
+         * Transmission Pipeline: Logs name indices down directly inside the data schema rows.
+         */
+        function executePlayerBuzzHitTransmission() {
+            if (!canBuzz) return;
+
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            try {
+                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
+                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
+
+                // Strict limit cap guard constraint check to lock data input rows to 10 entries maximum
+                if (buzzes.length < 10) {
+                    const matchCheck = buzzes.some(entry => entry.name === localPlayerIdentityString);
+                    if (!matchCheck) {
+                        buzzes.push({
+                            name: localPlayerIdentityString,
+                            time: new Date().toLocaleTimeString()
+                        });
+                        localStorage.setItem("quiz_master_buzzes_raw", JSON.stringify(buzzes));
+                    }
+                }
+            } catch(e) { console.error(e); }
+
+            canBuzz = false;
+            const btn = document.getElementById('buzzer-btn');
+            if(btn) {
+                btn.className = "buzzer-btn buzzer-green";
+                btn.innerText = "BUZZED!";
+            }
+        }
+
+        /**
+         * Dynamic State Sync Controller (Guest View):
+         * Reads flat table logs to process color configurations safely.
+         */
+        function syncPlayerBuzzerStateWithHostCommand() {
+            const sessionGateStatus = localStorage.getItem("quiz_master_session_status");
+            
+            if (sessionGateStatus !== "ACTIVE") {
+                alert("The Host has closed this gaming room session.");
+                location.reload();
+                return;
+            }
+            syncPlayerBuzzerDisplayState();
+        }
+
+        function syncPlayerBuzzerDisplayState() {
+            try {
+                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
+                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
                 const btn = document.getElementById('buzzer-btn');
-                if (!btn) return;
+                if(!btn) return;
 
-                if (currentLogs.length === 0) {
+                if (buzzes.length === 0) {
+                    // Board is empty: Revert to red active framework state instantly
                     canBuzz = true;
                     btn.className = "buzzer-btn buzzer-red";
                     btn.innerText = "Press to Buzz";
                 } else {
+                    // Board has records: Lock out double hits safely and extract winner name properties cleanly
                     canBuzz = false;
-                    /* FIXED LINE 333: Absolute array index zero bracket mapping extracts properties flawlessly */
-                    const absoluteWinnerName = currentLogs[0].username; 
+                    const absoluteWinnerName = buzzes[0].name;
                     btn.className = "buzzer-btn buzzer-green";
                     btn.innerText = `${absoluteWinnerName} BUZZED!`;
                 }
-            } catch(e) {
-                alert("Buzzer Status Sync Failure: " + e.message);
-            }
+            } catch(e) { console.error(e); }
         }
 
         /**
-         * Admin Leaderboard Sync Renderer:
-         * Pulls table rows and lists player entries sequentially down to the millisecond index.
+         * Admin Dashboard Sync Renderer:
+         * Manages millisecond buzzer feeds and lists player rosters natively on tap.
          */
-        function renderLeaderboard() {
+        function refreshAdminDashboardPanelsNatively() {
             try {
-                const container = document.getElementById('leaderboard');
-                if(!container) return;
-
-                const data = getGlobalBuzzMemory(activeRoom);
-
-                if (data.length === 0) {
-                    container.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
-                    return;
+                // Panel 1: Chronological millisecond buzzer responses mapping loop
+                let buzzesRaw = localStorage.getItem("quiz_master_buzzes_raw");
+                let buzzes = buzzesRaw ? JSON.parse(buzzesRaw) : [];
+                const leaderboardContainer = document.getElementById('admin-leaderboard-box');
+                
+                if (leaderboardContainer) {
+                    if (buzzes.length === 0) {
+                        leaderboardContainer.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
+                    } else {
+                        leaderboardContainer.innerHTML = "";
+                        buzzes.forEach((entry, idx) => {
+                            const row = document.createElement('div');
+                            const isFirst = idx === 0;
+                            row.className = `row-entry ${isFirst ? 'winner' : ''}`;
+                            row.innerHTML = `
+                                <div class="row-left">
+                                    <span class="rank">#${idx + 1}</span>
+                                    <span>${entry.name}</span>
+                                </div>
+                                <div style="display:flex; align-items:center;">
+                                    ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
+                                    <span class="timestamp">${entry.time}</span>
+                                </div>
+                            `;
+                            leaderboardContainer.appendChild(row);
+                        });
+                    }
                 }
 
-                container.innerHTML = ""; 
-                data.forEach((entry, idx) => {
-                    const item = document.createElement('div');
-                    const isFirst = idx === 0;
-                    
-                    item.className = `row-entry ${isFirst ? 'winner' : ''}`;
-                    item.innerHTML = `
-                        <div class="row-left">
-                            <span class="rank">#${idx + 1}</span>
-                            <span>${entry.username}</span>
-                        </div>
-                        <div style="display:flex; align-items:center;">
-                            ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
-                            <span class="timestamp">${entry.buzzed_at}</span>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-            } catch(e) {
-                alert("Leaderboard Rendering Failed: " + e.message);
-            }
+                // Panel 2: Realtime Active connected participants roster deck template
+                let rosterRaw = localStorage.getItem("quiz_master_roster_raw");
+                let roster = rosterRaw ? JSON.parse(rosterRaw) : [];
+                const rosterContainer = document.getElementById('admin-roster-box');
+                
+                if (rosterContainer) {
+                    if (roster.length === 0) {
+                        rosterContainer.innerHTML = '<div class="empty-text">No users active...</div>';
+                    } else {
+                        rosterContainer.innerHTML = '<div class="roster-grid"></div>';
+                        const grid = rosterContainer.querySelector('.roster-grid');
+                        roster.forEach(player => {
+                            const elementCard = document.createElement('span');
+                            elementCard.className = 'roster-card';
+                            elementCard.innerText = player;
+                            grid.appendChild(elementCard);
+                        });
+                    }
+                }
+            } catch(err) { console.error(err); }
         }
 
         /**
-         * Master Admin Action: Reset Round
+         * Master Admin Board Clear Action Routine: Wipes responses, leaving active players saved.
          */
-        function clearBoard() {
-            try {
-                saveGlobalBuzzMemory(activeRoom, []);
-                renderLeaderboard();
-            } catch(e) {
-                alert("Reset Round Command Failed: " + e.message);
-            }
+        function clearMasterLeaderboardFeed() {
+            localStorage.setItem("quiz_master_buzzes_raw", "[]");
+            refreshAdminDashboardPanelsNatively();
         }
 
         /**
-         * Master Admin Action: Teardown Session
+         * Master Admin Hard Close Teardown Utility: Disconnects everything.
          */
-        function deleteEntireRoom() {
-            try {
-                if(!confirm("Are you sure you want to close this room session? All players will be disconnected.")) return;
-                
-                let activeList = getGlobalRoomsCache();
-                activeList = activeList.filter(item => item !== activeRoom);
-                saveGlobalRoomsCache(activeList);
-                localStorage.removeItem(`buzzes_${activeRoom}`);
-                
-                location.reload();
-            } catch(e) {
-                alert("Teardown Session Failure: " + e.message);
-            }
+        function terminateMasterSession() {
+            if(!confirm("Are you sure you want to end this game session? All guests will be disconnected.")) return;
+            localStorage.removeItem("quiz_master_session_status");
+            localStorage.removeItem("quiz_master_buzzes_raw");
+            localStorage.removeItem("quiz_master_roster_raw");
+            location.reload();
         }
     </script>
 </body>
