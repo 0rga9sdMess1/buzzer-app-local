@@ -1,8 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
+<!--
+================================================================================
+CHANGELOG
+
+Ver.1.0.0.14.05.2026.19.01.00
+- Rebuilt stable Supabase architecture
+- Added proper session handling
+- Added roster synchronization
+- Added live multiplayer buzzer sync
+- Added leave session cleanup system
+
+Ver.0.9.9.14.05.2026.18.40.00
+- Fixed broken session deletion logic
+- Fixed duplicate buzz registrations
+
+Ver.0.9.8.14.05.2026.18.20.00
+- Improved mobile polling stability
+
+Ver.0.9.7.14.05.2026.17.50.00
+- Added admin dashboard redesign
+
+Ver.0.9.6.14.05.2026.17.10.00
+- Initial multiplayer buzzer prototype
+================================================================================
+-->
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
 
 <title>Quiz Buzzer</title>
 
@@ -23,6 +55,7 @@ body{
     justify-content:center;
     align-items:center;
     padding:20px;
+    position:relative;
 }
 
 .screen{
@@ -94,6 +127,7 @@ button{
     justify-content:center;
     gap:10px;
     margin-bottom:22px;
+    flex-wrap:wrap;
 }
 
 .badge{
@@ -121,12 +155,12 @@ button{
     font-weight:800;
 }
 
-.buzzer.red{
+.red{
     background:#dc2626;
     border-bottom:12px solid #991b1b;
 }
 
-.buzzer.green{
+.green{
     background:#059669;
     border-bottom:12px solid #047857;
 }
@@ -152,25 +186,25 @@ button{
     align-items:center;
 }
 
-.row.winner{
+.winner{
     background:rgba(5,150,105,0.15);
     border-color:#059669;
     color:#34d399;
     font-weight:bold;
 }
 
-.empty{
-    text-align:center;
-    color:#666;
-    padding:20px 0;
-}
-
 .section{
     font-size:12px;
-    color:#aaa;
+    color:#999;
     margin-top:12px;
     margin-bottom:8px;
     text-transform:uppercase;
+}
+
+.empty{
+    text-align:center;
+    color:#666;
+    padding:20px;
 }
 
 .roster{
@@ -187,12 +221,20 @@ button{
     font-size:12px;
 }
 
+.version{
+    position:fixed;
+    bottom:8px;
+    right:12px;
+    font-size:10px;
+    color:#555;
+    font-family:monospace;
+}
+
 </style>
+
 </head>
 
 <body>
-
-<!-- HOME -->
 
 <div id="home" class="screen active">
 
@@ -205,7 +247,7 @@ button{
 
     <button
         class="primary"
-        onclick="joinAsGuest()"
+        onclick="joinGuest()"
     >
         Join as Guest
     </button>
@@ -219,8 +261,6 @@ button{
 
 </div>
 
-<!-- PASSWORD -->
-
 <div id="password" class="screen">
 
     <h1>ADMIN<span>LOCK</span></h1>
@@ -233,7 +273,7 @@ button{
 
     <button
         class="primary"
-        onclick="verifyAdminPassword()"
+        onclick="adminLogin()"
     >
         Verify Access
     </button>
@@ -247,14 +287,12 @@ button{
 
 </div>
 
-<!-- PLAYER -->
-
 <div id="player" class="screen">
 
     <div class="badges">
 
         <div class="badge">
-            SESSION: LIVE
+            SESSION LIVE
         </div>
 
         <div class="badge">
@@ -276,9 +314,14 @@ button{
 
     </div>
 
-</div>
+    <button
+        class="secondary"
+        onclick="leaveSession()"
+    >
+        Leave Session
+    </button>
 
-<!-- ADMIN -->
+</div>
 
 <div id="admin" class="screen">
 
@@ -289,13 +332,6 @@ button{
         onclick="resetBuzzers()"
     >
         Reset Buzzers
-    </button>
-
-    <button
-        class="danger"
-        onclick="closeSession()"
-    >
-        Close & Delete Session
     </button>
 
     <div class="section">
@@ -318,19 +354,42 @@ button{
         </div>
     </div>
 
+    <button
+        class="danger"
+        onclick="closeSession()"
+        style="margin-top:16px;"
+    >
+        Close & Delete Session
+    </button>
+
+</div>
+
+<div class="version">
+Ver.1.0.0.14.05.2026.19.01.00
 </div>
 
 <script>
 
 /* =========================
-   SUPABASE CONFIG
+VERSION
+========================= */
+
+const APP_VERSION =
+"Ver.1.0.0.14.05.2026.19.01.00";
+
+/* =========================
+SUPABASE CONFIG
 ========================= */
 
 const SUPABASE_URL =
-"https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
+"PASTE_YOUR_PROJECT_URL_HERE/rest/v1";
 
 const SUPABASE_KEY =
-"YOUR_ANON_KEY_HERE";
+"PASTE_YOUR_ANON_KEY_HERE";
+
+/* =========================
+HEADERS
+========================= */
 
 const HEADERS = {
     apikey: SUPABASE_KEY,
@@ -340,17 +399,20 @@ const HEADERS = {
 };
 
 /* =========================
-   GLOBALS
+GLOBALS
 ========================= */
 
+const clientId = crypto.randomUUID();
+
 let username = "";
-let canBuzz = true;
 
 let playerLoop = null;
 let adminLoop = null;
 
+let canBuzz = true;
+
 /* =========================
-   SCREEN SWITCHER
+SCREEN SWITCH
 ========================= */
 
 function showScreen(id){
@@ -367,18 +429,18 @@ function showScreen(id){
 }
 
 /* =========================
-   ADMIN LOGIN
+ADMIN LOGIN
 ========================= */
 
-async function verifyAdminPassword(){
+async function adminLogin(){
 
-    const pass =
+    const password =
         document
         .getElementById("passwordInput")
         .value
         .trim();
 
-    if(pass !== "BlackMirror"){
+    if(password !== "BlackMirror"){
 
         alert(
             "Password is incorrect. But Shut Up and Dance anyway!"
@@ -388,8 +450,6 @@ async function verifyAdminPassword(){
     }
 
     try{
-
-        /* create session */
 
         await fetch(
             `${SUPABASE_URL}/rooms`,
@@ -408,17 +468,18 @@ async function verifyAdminPassword(){
 
     refreshAdmin();
 
-    adminLoop = setInterval(
-        refreshAdmin,
-        1500
-    );
+    adminLoop =
+        setInterval(
+            refreshAdmin,
+            1000
+        );
 }
 
 /* =========================
-   JOIN AS GUEST
+JOIN GUEST
 ========================= */
 
-async function joinAsGuest(){
+async function joinGuest(){
 
     const input =
         document
@@ -429,14 +490,9 @@ async function joinAsGuest(){
 
     if(!name){
 
-        alert("Please enter username");
-
-        return;
-    }
-
-    if(name.toUpperCase() === "ADMIN"){
-
-        alert("Username ADMIN is reserved");
+        alert(
+            "Please enter username"
+        );
 
         return;
     }
@@ -469,16 +525,16 @@ async function joinAsGuest(){
             .getElementById("playerName")
             .innerText = username;
 
-        /* add roster entry */
-
         await fetch(
             `${SUPABASE_URL}/buzzes`,
             {
                 method:"POST",
                 headers:HEADERS,
                 body:JSON.stringify({
-                    room_id:"ROSTER",
-                    username:username
+                    room_id:"MASTER_SESSION",
+                    username:username,
+                    client_id:clientId,
+                    type:"roster"
                 })
             }
         );
@@ -487,10 +543,11 @@ async function joinAsGuest(){
 
         syncPlayer();
 
-        playerLoop = setInterval(
-            syncPlayer,
-            1500
-        );
+        playerLoop =
+            setInterval(
+                syncPlayer,
+                1000
+            );
 
     }catch(err){
 
@@ -501,7 +558,7 @@ async function joinAsGuest(){
 }
 
 /* =========================
-   BUZZ
+BUZZ
 ========================= */
 
 async function buzz(){
@@ -518,26 +575,29 @@ async function buzz(){
     const btn =
         document.getElementById("buzzBtn");
 
-    btn.className = "buzzer green";
+    btn.className =
+        "buzzer green";
 
-    btn.innerText = "BUZZED!";
+    btn.innerText =
+        "BUZZED!";
 
     try{
 
-        const response =
+        const existingResponse =
             await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&order=buzzed_at.asc`,
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&order=buzzed_at.asc`,
                 {
                     headers:HEADERS
                 }
             );
 
-        const existing =
-            await response.json();
+        const existingBuzzes =
+            await existingResponse.json();
 
         const alreadyBuzzed =
-            existing.some(
-                item=>item.username === username
+            existingBuzzes.some(
+                item=>
+                item.client_id === clientId
             );
 
         if(!alreadyBuzzed){
@@ -549,7 +609,9 @@ async function buzz(){
                     headers:HEADERS,
                     body:JSON.stringify({
                         room_id:"MASTER_SESSION",
-                        username:username
+                        username:username,
+                        client_id:clientId,
+                        type:"buzz"
                     })
                 }
             );
@@ -559,42 +621,16 @@ async function buzz(){
 }
 
 /* =========================
-   PLAYER SYNC
+PLAYER SYNC
 ========================= */
 
 async function syncPlayer(){
 
     try{
 
-        /* session check */
-
-        const sessionCheck =
-            await fetch(
-                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
-                {
-                    headers:HEADERS
-                }
-            );
-
-        const sessionData =
-            await sessionCheck.json();
-
-        if(sessionData.length === 0){
-
-            clearInterval(playerLoop);
-
-            alert(
-                "Host closed the session"
-            );
-
-            location.reload();
-
-            return;
-        }
-
         const response =
             await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&select=username&order=buzzed_at.asc`,
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
                 {
                     headers:HEADERS
                 }
@@ -610,7 +646,8 @@ async function syncPlayer(){
 
             canBuzz = true;
 
-            btn.className = "buzzer red";
+            btn.className =
+                "buzzer red";
 
             btn.innerText =
                 "PRESS TO BUZZ";
@@ -623,7 +660,7 @@ async function syncPlayer(){
             btn.className =
                 "buzzer green";
 
-            if(winner.username === username){
+            if(winner.client_id === clientId){
 
                 btn.innerText =
                     "YOU BUZZED";
@@ -639,18 +676,18 @@ async function syncPlayer(){
 }
 
 /* =========================
-   ADMIN REFRESH
+ADMIN REFRESH
 ========================= */
 
 async function refreshAdmin(){
 
     try{
 
-        /* buzz list */
+        /* buzz feed */
 
         const buzzResponse =
             await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&select=username,buzzed_at&order=buzzed_at.asc`,
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
                 {
                     headers:HEADERS
                 }
@@ -659,60 +696,62 @@ async function refreshAdmin(){
         const buzzes =
             await buzzResponse.json();
 
-        const feed =
+        const buzzFeed =
             document.getElementById("buzzFeed");
 
         if(buzzes.length === 0){
 
-            feed.innerHTML =
-                `<div class="empty">
-                    Waiting for players...
-                </div>`;
+            buzzFeed.innerHTML =
+            `
+            <div class="empty">
+                Waiting for players...
+            </div>
+            `;
 
         }else{
 
-            feed.innerHTML = "";
+            buzzFeed.innerHTML = "";
 
             buzzes
-                .slice(0,10)
-                .forEach((item,index)=>{
+            .slice(0,10)
+            .forEach((item,index)=>{
 
-                    const row =
-                        document.createElement("div");
+                const row =
+                    document.createElement("div");
 
-                    row.className =
-                        `row ${
-                            index === 0
-                            ? "winner"
-                            : ""
-                        }`;
+                row.className =
+                    `row ${
+                        index===0
+                        ? "winner"
+                        : ""
+                    }`;
 
-                    row.innerHTML =
-                        `
-                        <span>
-                            #${index+1}
-                            ${item.username}
-                        </span>
+                row.innerHTML =
+                `
+                <span>
+                    #${index+1}
+                    ${item.username}
+                </span>
 
-                        <span>
-                            ${
-                                new Date(
-                                    item.buzzed_at
-                                ).toLocaleTimeString()
-                            }
-                        </span>
-                        `;
+                <span>
+                    ${
+                        new Date(
+                            item.buzzed_at
+                        ).toLocaleTimeString()
+                    }
+                </span>
+                `;
 
-                    feed.appendChild(row);
+                buzzFeed.appendChild(row);
 
-                });
+            });
         }
 
         /* roster */
 
         const rosterResponse =
             await fetch(
-                `${SUPABASE_URL}/buzzes?room_id=eq.ROSTER&select=username`,
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username,client_id`,
                 {
                     headers:HEADERS
                 }
@@ -727,26 +766,21 @@ async function refreshAdmin(){
         if(roster.length === 0){
 
             rosterFeed.innerHTML =
-                `<div class="empty">
-                    No players connected...
-                </div>`;
+            `
+            <div class="empty">
+                No players connected...
+            </div>
+            `;
 
         }else{
 
-            const unique =
-                [...new Set(
-                    roster.map(
-                        p=>p.username
-                    )
-                )];
-
             rosterFeed.innerHTML =
-                `<div class="roster"></div>`;
+            `<div class="roster"></div>`;
 
             const rosterDiv =
                 rosterFeed.querySelector(".roster");
 
-            unique.forEach(player=>{
+            roster.forEach(player=>{
 
                 const tag =
                     document.createElement("div");
@@ -755,7 +789,7 @@ async function refreshAdmin(){
                     "roster-item";
 
                 tag.innerText =
-                    player;
+                    player.username;
 
                 rosterDiv.appendChild(tag);
 
@@ -766,7 +800,7 @@ async function refreshAdmin(){
 }
 
 /* =========================
-   RESET BUZZERS
+RESET BUZZERS
 ========================= */
 
 async function resetBuzzers(){
@@ -774,7 +808,7 @@ async function resetBuzzers(){
     try{
 
         await fetch(
-            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz`,
             {
                 method:"DELETE",
                 headers:HEADERS
@@ -785,7 +819,37 @@ async function resetBuzzers(){
 }
 
 /* =========================
-   CLOSE SESSION
+LEAVE SESSION
+========================= */
+
+async function leaveSession(){
+
+    const confirmLeave =
+        confirm(
+            "Do you really want to leave this exciting session?"
+        );
+
+    if(!confirmLeave) return;
+
+    clearInterval(playerLoop);
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+    }catch(e){}
+
+    location.reload();
+}
+
+/* =========================
+CLOSE SESSION
 ========================= */
 
 async function closeSession(){
@@ -817,16 +881,8 @@ async function closeSession(){
             }
         );
 
-        await fetch(
-            `${SUPABASE_URL}/buzzes?room_id=eq.ROSTER`,
-            {
-                method:"DELETE",
-                headers:HEADERS
-            }
-        );
-
         alert(
-            "Session closed successfully"
+            "Session closed"
         );
 
         location.reload();
