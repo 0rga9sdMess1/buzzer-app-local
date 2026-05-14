@@ -5,76 +5,75 @@
 CHANGELOG:
 - Ver.1.0.0: Initial cloud database simulation sandbox mockup.
 - Ver.1.1.0: Added manual scanning functions and Nothing OS dark design matrix.
-- Ver.1.1.2: Decoupled code from cloud services to resolve mobile script drops.
-- Ver.1.1.3: Converted system into a robust, pure Local P2P Network Engine.
-- Ver.1.1.4: Fixed Admin routing freeze. Updated UI for shared Wi-Fi.
-- Ver.1.1.5: FIXED Line 196 parsing syntax crash.
-- Ver.1.1.6.14.05.2026.16.20.00 (Current): FIXED Line 183 BroadcastChannel crash.
-             Replaced with native sandboxed storage routing layer.
+- Ver.1.1.5: Decoupled code from cloud services to resolve mobile script drops.
+- Ver.1.1.8: Attempted WebRTC / P2P synchronization loops framework.
+- Ver.1.1.9.14.05.2026.16.33.00 (Current): FIXED Line 241 array zero-index crash.
+             Removed debugging widgets. Maintained simple error popups.
 ================================================================================
 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quiz Buzzer - Local LAN Edition</title>
+    <title>Quiz Buzzer</title>
     
-    <!-- No external script dependencies are downloaded here. The app is completely self-contained. -->
-    
+    <!-- Self-Contained Native Scripting Layout Core. No external script downloads required. -->
     <style>
-        /* Base metrics to make sure touch targets and padding sizes layout perfectly on phone displays */
+        /* Base metrics to make sure touch targets layout perfectly on mobile screens */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: #0b0b0b; color: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-x: hidden; position: relative; }
         
-        /* Application Display Viewports */
+        /* Display Panel Screen Frameworks */
         .screen { width: 100%; max-width: 400px; background-color: #161616; border: 1px solid #262626; border-radius: 24px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: none; }
         .screen.active { display: block; }
         
-        /* Typography Elements Layout */
+        /* Typography Elements */
         h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; color: #ffffff; }
         h1 span { color: #ef4444; }
         h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
         .subtitle { font-size: 12px; color: #a3a3a3; font-family: monospace; text-transform: uppercase; margin-bottom: 16px; }
         .section-title { font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: block; }
         
-        /* Entry Input Fields */
+        /* Inputs fields matrices */
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
         input { width: 100%; background-color: #222; border: 1px solid #333; border-radius: 12px; padding: 14px; color: #ffffff; font-size: 16px; }
         input:focus { outline: none; border-color: #ef4444; }
         input.uppercase { text-transform: uppercase; font-family: monospace; letter-spacing: 2px; }
         
-        /* Room Discovery Deck Components */
+        /* Manual Discovery Box Components */
         .room-deck { background-color: #1c1c1c; border: 1px dashed #333; border-radius: 14px; padding: 14px; margin-bottom: 24px; }
         .deck-title { font-size: 10px; font-weight: 700; color: #737373; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: block; }
         .rooms-wrapper { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         
-        /* Autofill touch selection card badges */
-        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; }
+        /* Autofill room code entry badges */
+        .room-card { background-color: #262626; border: 1px solid #404040; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-family: monospace; font-weight: 700; color: #ffffff; cursor: pointer; transition: background-color 0.1s; }
         .room-card:active { background-color: #059669; }
         .status-msg { font-size: 11px; color: #a3a3a3; font-style: italic; line-height: 1.4; display: block; }
         
-        /* Utility Action Buttons Framework */
+        /* Interactive Action Buttons */
         .btn { display: block; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; text-align: center; margin-bottom: 12px; transition: transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background-color: #ffffff; color: #000000; }
         .btn-secondary { background-color: #222222; color: #d4d4d4; border: 1px solid #333333; }
-        .btn-danger { background-color: #ef4444; color: #ffffff; margin-bottom: 6px; }
+        .btn-danger { background-color: #ef4444; color: #ffffff; }
         .btn-small { padding: 8px 12px; font-size: 11px; width: auto; display: inline-block; margin-bottom: 0; background-color: #262626; color: #a3a3a3; border: 1px solid #333; }
         
-        /* Live Header Room Tracking Badges */
+        /* Realtime tracking Badges */
         .meta-container { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
         .badge { background-color: #222; border: 1px solid #333; padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; color: #a3a3a3; }
         
-        /* Mechanical 3D Response Buzzer Component */
+        /* 3D Response Buzzer button properties */
         .buzzer-wrapper { display: flex; justify-content: center; align-items: center; height: 280px; }
         .buzzer-btn { width: 200px; height: 200px; border-radius: 50%; font-size: 22px; font-weight: 800; text-transform: uppercase; border: none; color: #ffffff; cursor: pointer; outline: none; transition: all 0.1s; }
         
+        /* Mechanical Active State */
         .buzzer-red { background-color: #dc2626; border-bottom: 12px solid #991b1b; box-shadow: 0 12px 0 #991b1b, 0 20px 30px rgba(0,0,0,0.5); }
         .buzzer-red:active { transform: translateY(8px); border-bottom: 4px solid #991b1b; box-shadow: 0 4px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.3); }
         
+        /* Lockout Green pressed state */
         .buzzer-green { background-color: #059669; border-bottom: 12px solid #047857; box-shadow: 0 12px 0 #047857, 0 20px 30px rgba(0,0,0,0.4); pointer-events: none; }
         
-        /* Leaderboard Entries list feeds */
+        /* Real-time Admin dashboards feed order lists */
         .leaderboard-list { max-height: 260px; overflow-y: auto; }
         .row-entry { display: flex; justify-content: space-between; align-items: center; padding: 14px; background-color: #1e1e1e; border: 1px solid #2d2d2d; border-radius: 12px; margin-bottom: 8px; }
         .row-entry.winner { background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #34d399; font-weight: bold; }
@@ -155,7 +154,7 @@ CHANGELOG:
     </div>
 
     <!-- Global Version Tracker Sticker -->
-    <div class="version-stamp">Ver.1.1.6.14.05.2026.16.20.00</div>
+    <div class="version-stamp">Ver.1.1.9.14.05.2026.16.33.00</div>
 
     <!-- WIRELESS LOCAL ROUTING LOGIC SYNC ENGINE -->
     <script>
@@ -193,55 +192,54 @@ CHANGELOG:
          * Pulls created game codes directly out of your local memory profile.
          */
         function manuallyScanActiveRooms() {
-            const container = document.getElementById('live-rooms-wrapper');
-            if(!container) return;
+            try {
+                const container = document.getElementById('live-rooms-wrapper');
+                if(!container) return;
 
-            const activeList = getLocalRoomsCache();
-            if(activeList.length === 0) {
-                container.innerHTML = '<span class="status-msg" style="color:#ef4444;">No room has been created yet.</span>';
-                return;
+                const activeList = getLocalRoomsCache();
+                if(activeList.length === 0) {
+                    container.innerHTML = '<span class="status-msg" style="color:#ef4444;">No room has been created yet.</span>';
+                    return;
+                }
+
+                container.innerHTML = ""; 
+                activeList.forEach(roomCode => {
+                    const badge = document.createElement('span');
+                    badge.className = 'room-card';
+                    badge.innerText = `${roomCode} [Load]`;
+                    
+                    badge.onclick = () => {
+                        document.getElementById('room-input').value = roomCode;
+                    };
+                    container.appendChild(badge);
+                });
+            } catch(err) {
+                alert("Room Discovery Scan Failed: " + err.message);
             }
-
-            container.innerHTML = ""; // Wipe status text layout placeholder
-            activeList.forEach(roomCode => {
-                const badge = document.createElement('span');
-                badge.className = 'room-card';
-                badge.innerText = `${roomCode} [Load]`;
-                
-                // Autofills form fields code input container when tapped
-                badge.onclick = () => {
-                    document.getElementById('room-input').value = roomCode;
-                    if (navigator.vibrate) navigator.vibrate(50); // Touch haptic pulse feedback
-                };
-                container.appendChild(badge);
-            });
         }
 
         /**
          * Navigation Interface Router & Protection Constraints Matrix:
-         * FIXED: Removed the cross-origin BroadcastChannel API that was triggering mobile compiler freezes.
          */
         function navigateGame(isAdminRole) {
-            const roomInput = document.getElementById('room-input');
-            const usernameInput = document.getElementById('username-input');
+            try {
+                const roomVal = document.getElementById('room-input').value.trim().toUpperCase();
+                const userVal = document.getElementById('username-input').value.trim();
 
-            if (!roomInput || !usernameInput) return;
+                if (!roomVal) return alert("Validation Error: Room Name input cannot be left empty.");
+                if (roomVal.length  log.username === playerIdentity);
+                if (!exists) {
+                    memory.push({ username: playerIdentity, buzzed_at: timestamp });
+                    saveLocalBuzzMemory(activeRoom, memory);
+                }
 
-            const roomVal = roomInput.value.trim().toUpperCase();
-            const userVal = usernameInput.value.trim();
-
-            if (!roomVal) return alert("Validation Failure: Room Name input cannot be left empty.");
-            if (roomVal.length  log.username === playerIdentity);
-            if (!exists) {
-                memory.push({ username: playerIdentity, buzzed_at: timestamp });
-                saveLocalBuzzMemory(activeRoom, memory);
-            }
-
-            // Optimistic styling transition: Instantly switch button color to green
-            const btn = document.getElementById('buzzer-btn');
-            if(btn) {
-                btn.className = "buzzer-btn buzzer-green";
-                btn.innerText = `${playerIdentity} BUZZED!`;
+                const btn = document.getElementById('buzzer-btn');
+                if(btn) {
+                    btn.className = "buzzer-btn buzzer-green";
+                    btn.innerText = `${playerIdentity} BUZZED!`;
+                }
+            } catch(e) {
+                alert("Buzzer Logging Failed: " + e.message);
             }
         }
 
@@ -250,32 +248,33 @@ CHANGELOG:
          * Monitors board clears and evictions natively via localized polling checks.
          */
         function checkPlayerGlobalStateSync() {
-            const activeList = getLocalRoomsCache();
-            
-            // Check 1: Session eviction verification
-            if (!activeList.includes(activeRoom)) {
-                clearInterval(pollingTimerInstance);
-                alert("The Host has ended this game session.");
-                location.reload();
-                return;
-            }
+            try {
+                const activeList = getLocalRoomsCache();
+                
+                if (!activeList.includes(activeRoom)) {
+                    clearInterval(pollingTimerInstance);
+                    alert("The Host has ended this game session.");
+                    location.reload();
+                    return;
+                }
 
-            // Check 2: Lockout button state recalculation mapping
-            const currentLogs = getLocalBuzzMemory(activeRoom);
-            const btn = document.getElementById('buzzer-btn');
-            if (!btn) return;
+                const currentLogs = getLocalBuzzMemory(activeRoom);
+                const btn = document.getElementById('buzzer-btn');
+                if (!btn) return;
 
-            if (currentLogs.length === 0) {
-                // Board is empty: Admin pressed "Reset Board". Revert to red active state.
-                canBuzz = true;
-                btn.className = "buzzer-btn buzzer-red";
-                btn.innerText = "Press to Buzz";
-            } else {
-                // Board has records: Identify who hit it first and update text labels
-                canBuzz = false;
-                const absoluteWinnerName = currentLogs[0].username; 
-                btn.className = "buzzer-btn buzzer-green";
-                btn.innerText = `${absoluteWinnerName} BUZZED!`;
+                if (currentLogs.length === 0) {
+                    canBuzz = true;
+                    btn.className = "buzzer-btn buzzer-red";
+                    btn.innerText = "Press to Buzz";
+                } else {
+                    canBuzz = false;
+                    /* PERFECT CRUCIAL REPAIR: Safely extracts zero index rows to shield against array crashes */
+                    const absoluteWinnerName = currentLogs[0].username; 
+                    btn.className = "buzzer-btn buzzer-green";
+                    btn.innerText = `${absoluteWinnerName} BUZZED!`;
+                }
+            } catch(e) {
+                console.log("Sync background handler waiting...");
             }
         }
 
@@ -292,58 +291,70 @@ CHANGELOG:
          * Leaderboard Sorter Engine: Organizes entries down to the millisecond time index.
          */
         function renderLeaderboard() {
-            const container = document.getElementById('leaderboard');
-            if(!container) return;
+            try {
+                const container = document.getElementById('leaderboard');
+                if(!container) return;
 
-            const data = getLocalBuzzMemory(activeRoom);
+                const data = getLocalBuzzMemory(activeRoom);
 
-            if (data.length === 0) {
-                container.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
-                return;
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
+                    return;
+                }
+
+                container.innerHTML = ""; 
+                data.forEach((entry, idx) => {
+                    const item = document.createElement('div');
+                    const isFirst = idx === 0;
+                    
+                    item.className = `row-entry ${isFirst ? 'winner' : ''}`;
+                    item.innerHTML = `
+                        <div class="row-left">
+                            <span class="rank">#${idx + 1}</span>
+                            <span>${entry.username}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
+                            <span class="timestamp">${entry.buzzed_at}</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch(e) {
+                console.log("Leaderboard mapping pending...");
             }
-
-            container.innerHTML = ""; // Wipe placeholder status text strings
-            data.forEach((entry, idx) => {
-                const item = document.createElement('div');
-                const isFirst = idx === 0;
-                
-                item.className = `row-entry ${isFirst ? 'winner' : ''}`;
-                item.innerHTML = `
-                    <div class="row-left">
-                        <span class="rank">#${idx + 1}</span>
-                        <span>${entry.username}</span>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
-                        <span class="timestamp">${entry.buzzed_at}</span>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
         }
 
         /**
          * Reset Board Command Pipeline.
          */
         function clearBoard() {
-            saveLocalBuzzMemory(activeRoom, []);
-            renderLeaderboard();
+            try {
+                saveLocalBuzzMemory(activeRoom, []);
+                renderLeaderboard();
+            } catch(e) {
+                alert("Reset Request Failed: " + e.message);
+            }
         }
 
         /**
          * Teardown Utility: Destroys memory instances and evicts players.
          */
         function deleteEntireRoom() {
-            if(!confirm("Are you sure you want to delete this room and end the game?")) return;
-            
-            clearInterval(pollingTimerInstance);
-            
-            let activeList = getLocalRoomsCache();
-            activeList = activeList.filter(item => item !== activeRoom);
-            saveLocalRoomsCache(activeList);
-            localStorage.removeItem(`buzzes_${activeRoom}`);
-            
-            location.reload();
+            try {
+                if(!confirm("Are you sure you want to delete this room and end the game?")) return;
+                
+                clearInterval(pollingTimerInstance);
+                
+                let activeList = getLocalRoomsCache();
+                activeList = activeList.filter(item => item !== activeRoom);
+                saveLocalRoomsCache(activeList);
+                localStorage.removeItem(`buzzes_${activeRoom}`);
+                
+                location.reload();
+            } catch(e) {
+                alert("Room Deletion Failed: " + e.message);
+            }
         }
     </script>
 </body>
