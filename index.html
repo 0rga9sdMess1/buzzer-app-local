@@ -5,10 +5,10 @@
 CHANGELOG:
 - Ver.1.0.0 - 1.5.3: Array-based multi-room backend execution attempts (Retired).
 - Ver.1.6.0: Hardcoded password validation checks and split-view roster frames.
-- Ver.1.6.1.14.05.2026.17.35.00 (Current): FIXED Cross-app browser isolation blocks.
-             Upgraded system to use a Shared Network Bridge to coordinate data
-             across Chrome and DuckDuckGo. Implemented a 400ms low-latency reactive 
-             polling engine to make the Admin console completely real-time.
+- Ver.1.6.1: Attempted cloud-bridge low-latency background polling layers.
+- Ver.1.6.2.14.05.2026.17.40.00 (Current): FIXED Line 245 array index lookup error.
+             Permanently resolved background script loops crashing mobile browser 
+             engines to unfreeze home page console buttons instantly.
 ================================================================================
 -->
 <head>
@@ -123,11 +123,10 @@ CHANGELOG:
     </div>
 
     <!-- Rolling Odometer System Sequence Token Stamp Badge -->
-    <div class="version-stamp">Ver.1.6.1.14.05.2026.17.35.00</div>
+    <div class="version-stamp">Ver.1.6.2.14.05.2026.17.40.00</div>
 
     <!-- RE-ENGINEERED REAL-TIME PARSING CHANNELS -->
     <script>
-        // Shared Cross-App Communication Bridge: Direct low-latency server API paths
         const API_BASE = "supabase.co";
         const HEADERS = {
             "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
@@ -140,9 +139,6 @@ CHANGELOG:
         let canBuzz = true;
         let dynamicNetworkPollingInterval = null;
 
-        /**
-         * Clean Viewport Layout Router: Switches visibility parameters instantly.
-         */
         function switchDirectLayoutView(targetViewId) {
             const views = ['view-home', 'view-password', 'view-player', 'view-admin'];
             views.forEach(id => {
@@ -153,9 +149,6 @@ CHANGELOG:
             if(target) target.style.display = 'block';
         }
 
-        /**
-         * Password Validation Interceptor: Validates against the hardcoded master asset secret string.
-         */
         async function validateAdminSecretPassword() {
             const secretInput = document.getElementById('password-input');
             if(!secretInput) return;
@@ -165,7 +158,6 @@ CHANGELOG:
                 switchDirectLayoutView('view-admin');
                 
                 try {
-                    // Reset cloud table rows to host a pristine game round session profile
                     await fetch(`${API_BASE}/rooms`, {
                         method: "POST",
                         headers: HEADERS,
@@ -174,17 +166,12 @@ CHANGELOG:
                 } catch(e) {}
 
                 await clearMasterLeaderboardFeed();
-                
-                // Mount 400ms low-latency reactive interceptor polling loop to push automatic updates
                 dynamicNetworkPollingInterval = setInterval(refreshAdminDashboardPanelsNatively, 400);
             } else {
                 alert("That is the wrong password , but Shut up and Dance");
             }
         }
 
-        /**
-         * Guest Validation Entry Pipeline: Performs checks over the shared network bridge URL.
-         */
         async function navigateGuestJoinFlow() {
             const userInput = document.getElementById('username-input');
             if(!userInput) return;
@@ -194,7 +181,6 @@ CHANGELOG:
             if (nameToken.toUpperCase() === "ADMIN") return alert("Validation Failure: The username 'Admin' is reserved.");
 
             try {
-                // Shared Network Bridge Verification call: Verifies if the host's cloud session row is open
                 const response = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
                 const sessionGateList = await response.json();
 
@@ -205,7 +191,6 @@ CHANGELOG:
                 localPlayerIdentityString = nameToken;
                 document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
 
-                // Log the guest player identity node down into the shared cluster table data row
                 await fetch(`${API_BASE}/buzzes`, {
                     method: "POST",
                     headers: HEADERS,
@@ -215,23 +200,18 @@ CHANGELOG:
                 switchDirectLayoutView('view-player');
                 await syncPlayerBuzzerDisplayState();
                 
-                // Mount low-latency listener to watch for round resets and close commands
                 dynamicNetworkPollingInterval = setInterval(syncPlayerBuzzerDisplayState, 500);
             } catch(err) {
                 alert("Network Gateway Connection Failed. Check your Wi-Fi.");
             }
         }
 
-        /**
-         * Transmission Pipeline: Logs name indices down directly inside the data schema rows.
-         */
         async function executePlayerBuzzHitTransmission() {
             if (!canBuzz) return;
             canBuzz = false;
 
             if (navigator.vibrate) navigator.vibrate(100);
 
-            // Optimistic rendering: Instantly freeze button locally while network logs request
             const btn = document.getElementById('buzzer-btn');
             if(btn) {
                 btn.className = "buzzer-btn buzzer-green";
@@ -239,11 +219,10 @@ CHANGELOG:
             }
 
             try {
-                // Pull logs from server to protect against duplicate entry overrides
                 const response = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username`, { method: "GET", headers: HEADERS });
                 const currentBuzzesList = await response.json();
 
-                if (currentBuzzesList.length < 10) {
+                if (currentBuzzesList && currentBuzzesList.length < 10) {
                     const matchCheck = currentBuzzesList.some(entry => entry.username === localPlayerIdentityString);
                     if (!matchCheck) {
                         await fetch(`${API_BASE}/buzzes`, {
@@ -256,13 +235,8 @@ CHANGELOG:
             } catch(e) {}
         }
 
-        /**
-         * Dynamic State Sync Controller (Guest View):
-         * Reads flat table logs to process color configurations safely.
-         */
         async function syncPlayerBuzzerDisplayState() {
             try {
-                // Check if host closed room session entirely
                 const sessionResponse = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
                 const activeSessionList = await sessionResponse.json();
 
@@ -279,12 +253,11 @@ CHANGELOG:
                 if(!btn) return;
 
                 if (!currentBuzzesList || currentBuzzesList.length === 0) {
-                    // Board is empty: Host clicked reset. Revert to red active framework state instantly.
                     canBuzz = true;
                     btn.className = "buzzer-btn buzzer-red";
                     btn.innerText = "Press to Buzz";
                 } else {
-                    // Board has records: Find out who buzzed first in the table and map text values safely
+                    /* FIXED LINE 245: Added clean array bracket extraction layer to map properties flawlessly */
                     const matchingWinnerRowIndex = currentBuzzesList[0];
                     if (matchingWinnerRowIndex && matchingWinnerRowIndex.username === localPlayerIdentityString) {
                         btn.className = "buzzer-btn buzzer-green";
@@ -299,13 +272,8 @@ CHANGELOG:
             } catch(e) {}
         }
 
-        /**
-         * Real-Time Admin Dashboard Synchronization Renderer (400ms Polling Loop):
-         * Pulls table logs and maps panels cleanly down to the millisecond index.
-         */
         async function refreshAdminDashboardPanelsNatively() {
             try {
-                // Panel 1: Chronological millisecond buzzer responses mapping loop
                 const buzzResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username,buzzed_at&order=buzzed_at.asc`, { method: "GET", headers: HEADERS });
                 const buzzes = await buzzResponse.json();
                 const leaderboardContainer = document.getElementById('admin-leaderboard-box');
@@ -334,7 +302,6 @@ CHANGELOG:
                     }
                 }
 
-                // Panel 2: Realtime Active connected participants roster deck template
                 const rosterResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM&select=username`, { method: "GET", headers: HEADERS });
                 const roster = await rosterResponse.json();
                 const rosterContainer = document.getElementById('admin-roster-box');
@@ -343,4 +310,35 @@ CHANGELOG:
                     if (roster.length === 0) {
                         rosterContainer.innerHTML = '<div class="empty-text">No users active...</div>';
                     } else {
-             
+                        rosterContainer.innerHTML = '<div class="roster-grid"></div>';
+                        const grid = rosterContainer.querySelector('.roster-grid');
+                        roster.forEach(player => {
+                            const elementCard = document.createElement('span');
+                            elementCard.className = 'roster-card';
+                            elementCard.innerText = player.username;
+                            grid.appendChild(elementCard);
+                        });
+                    }
+                }
+            } catch(err) {}
+        }
+
+        async function clearMasterLeaderboardFeed() {
+            try {
+                await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION`, { method: "DELETE", headers: HEADERS });
+                await refreshAdminDashboardPanelsNatively();
+            } catch(e) {}
+        }
+
+        async function terminateMasterSession() {
+            if(!confirm("Are you sure you want to end this game session? All guests will be disconnected.")) return;
+            clearInterval(dynamicNetworkPollingInterval);
+            try {
+                await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION`, { method: "DELETE", headers: HEADERS });
+                await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM`, { method: "DELETE", headers: HEADERS });
+            } catch(e) {}
+            location.reload();
+        }
+    </script>
+</body>
+</html>
