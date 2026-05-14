@@ -2,29 +2,32 @@
 <html lang="en">
 
 <!--
-================================================================================
+===============================================================================
 CHANGELOG
 
+Ver.1.0.2.14.05.2026.20.32.00
+- Fixed Android browser button crash
+- Fixed AudioContext initialization issue
+- Added safe mobile sound handling
+- Improved multiplayer synchronization
+- Added winner animation system
+
+Ver.1.0.1.14.05.2026.20.05.00
+- Added winner/loser sounds
+- Added host-close auto logout
+- Added buzz animations
+
 Ver.1.0.0.14.05.2026.19.01.00
-- Rebuilt stable Supabase architecture
-- Added proper session handling
+- Rebuilt stable multiplayer architecture
+- Added session handling
 - Added roster synchronization
-- Added live multiplayer buzzer sync
-- Added leave session cleanup system
 
 Ver.0.9.9.14.05.2026.18.40.00
-- Fixed broken session deletion logic
 - Fixed duplicate buzz registrations
 
 Ver.0.9.8.14.05.2026.18.20.00
-- Improved mobile polling stability
-
-Ver.0.9.7.14.05.2026.17.50.00
-- Added admin dashboard redesign
-
-Ver.0.9.6.14.05.2026.17.10.00
-- Initial multiplayer buzzer prototype
-================================================================================
+- Improved polling stability
+===============================================================================
 -->
 
 <head>
@@ -56,6 +59,7 @@ body{
     align-items:center;
     padding:20px;
     position:relative;
+    transition:background 0.3s ease;
 }
 
 .screen{
@@ -104,6 +108,11 @@ button{
     font-weight:700;
     margin-bottom:12px;
     cursor:pointer;
+    transition:transform 0.15s ease;
+}
+
+button:active{
+    transform:scale(0.97);
 }
 
 .primary{
@@ -153,6 +162,7 @@ button{
     color:white;
     font-size:22px;
     font-weight:800;
+    transition:all 0.2s ease;
 }
 
 .red{
@@ -163,6 +173,7 @@ button{
 .green{
     background:#059669;
     border-bottom:12px solid #047857;
+    box-shadow:0 0 25px rgba(16,185,129,0.5);
 }
 
 .panel{
@@ -363,6 +374,11 @@ button{
     </button>
 
 </div>
+
+<div class="version">
+Ver.1.0.2.14.05.2026.20.32.00
+</div>
+
 <script>
 
 /* =========================
@@ -370,7 +386,7 @@ VERSION
 ========================= */
 
 const APP_VERSION =
-"Ver.1.0.1.14.05.2026.20.05.00";
+"Ver.1.0.2.14.05.2026.20.32.00";
 
 /* =========================
 SUPABASE CONFIG
@@ -408,6 +424,23 @@ let canBuzz = true;
 
 let alreadyAnnouncedWinner = false;
 
+let audioCtx = null;
+
+/* =========================
+SAFE AUDIO INIT
+========================= */
+
+function initAudio(){
+
+    if(audioCtx) return;
+
+    audioCtx =
+        new (
+            window.AudioContext ||
+            window.webkitAudioContext
+        )();
+}
+
 /* =========================
 VERSION DISPLAY
 ========================= */
@@ -429,13 +462,9 @@ document.addEventListener(
 SOUNDS
 ========================= */
 
-const audioCtx =
-    new (
-        window.AudioContext ||
-        window.webkitAudioContext
-    )();
-
 function playWinnerSound(){
+
+    if(!audioCtx) return;
 
     const osc =
         audioCtx.createOscillator();
@@ -445,15 +474,9 @@ function playWinnerSound(){
 
     osc.type = "triangle";
 
-    osc.frequency.setValueAtTime(
-        880,
-        audioCtx.currentTime
-    );
+    osc.frequency.value = 880;
 
-    gain.gain.setValueAtTime(
-        0.08,
-        audioCtx.currentTime
-    );
+    gain.gain.value = 0.08;
 
     osc.connect(gain);
 
@@ -461,12 +484,12 @@ function playWinnerSound(){
 
     osc.start();
 
-    osc.stop(
-        audioCtx.currentTime + 0.12
-    );
+    osc.stop(audioCtx.currentTime + 0.12);
 }
 
 function playLoserSound(){
+
+    if(!audioCtx) return;
 
     const osc =
         audioCtx.createOscillator();
@@ -476,20 +499,9 @@ function playLoserSound(){
 
     osc.type = "sawtooth";
 
-    osc.frequency.setValueAtTime(
-        180,
-        audioCtx.currentTime
-    );
+    osc.frequency.value = 180;
 
-    osc.frequency.exponentialRampToValueAtTime(
-        90,
-        audioCtx.currentTime + 0.15
-    );
-
-    gain.gain.setValueAtTime(
-        0.09,
-        audioCtx.currentTime
-    );
+    gain.gain.value = 0.08;
 
     osc.connect(gain);
 
@@ -497,28 +509,20 @@ function playLoserSound(){
 
     osc.start();
 
-    osc.stop(
-        audioCtx.currentTime + 0.15
-    );
+    osc.stop(audioCtx.currentTime + 0.15);
 }
 
 /* =========================
-ANIMATION
+WINNER ANIMATION
 ========================= */
 
 function triggerWinnerAnimation(){
 
     document.body.animate(
         [
-            {
-                background:"#0b0b0b"
-            },
-            {
-                background:"#063"
-            },
-            {
-                background:"#0b0b0b"
-            }
+            {background:"#0b0b0b"},
+            {background:"#063"},
+            {background:"#0b0b0b"}
         ],
         {
             duration:600
@@ -530,15 +534,9 @@ function triggerWinnerAnimation(){
 
     btn.animate(
         [
-            {
-                transform:"scale(1)"
-            },
-            {
-                transform:"scale(1.08)"
-            },
-            {
-                transform:"scale(1)"
-            }
+            {transform:"scale(1)"},
+            {transform:"scale(1.08)"},
+            {transform:"scale(1)"}
         ],
         {
             duration:500
@@ -700,6 +698,8 @@ async function buzz(){
 
     if(!canBuzz) return;
 
+    initAudio();
+
     canBuzz = false;
 
     alreadyAnnouncedWinner = false;
@@ -745,8 +745,6 @@ async function syncPlayer(){
 
     try{
 
-        /* ROOM EXISTENCE CHECK */
-
         const roomCheck =
             await fetch(
                 `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
@@ -770,8 +768,6 @@ async function syncPlayer(){
 
             return;
         }
-
-        /* BUZZ CHECK */
 
         const response =
             await fetch(
@@ -975,9 +971,88 @@ async function resetBuzzers(){
                 headers:HEADERS
             }
         );
-</script>
-        
 
+    }catch(e){}
+}
+
+/* =========================
+LEAVE SESSION
+========================= */
+
+async function leaveSession(){
+
+    const confirmLeave =
+        confirm(
+            "Do you really want to leave this exciting session ?"
+        );
+
+    if(!confirmLeave) return;
+
+    clearInterval(playerLoop);
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+    }catch(e){}
+
+    location.reload();
+}
+
+/* =========================
+CLOSE SESSION
+========================= */
+
+async function closeSession(){
+
+    const confirmClose =
+        confirm(
+            "Are you sure you want to end this session?"
+        );
+
+    if(!confirmClose) return;
+
+    clearInterval(adminLoop);
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+        alert(
+            "Session closed"
+        );
+
+        location.reload();
+
+    }catch(err){
+
+        alert(
+            "Failed to close session"
+        );
+    }
+}
+
+</script>
 
 </body>
 </html>
