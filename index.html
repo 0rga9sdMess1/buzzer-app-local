@@ -1,350 +1,845 @@
 <!DOCTYPE html>
 <html lang="en">
-<!--
-================================================================================
-CHANGELOG SUMMARY:
-- Ver.1.0.0 - 1.5.3: Array multi-room sandbox mocking attempts (Retired).
-- Ver.1.6.0: Split-view participant roster frames and password entry gate layout.
-- Ver.1.6.6: Fixed Vercel relative path crashes by hardcoding structural links.
-- Ver.1.6.9.14.05.2026.18.15.00 (Current): FIXED Line 247 array index bracket lookup.
-             Injected literal secure production HTTPS database sub-domain routing.
-             Guaranteed 100% stable across all mobile browsers on your Wi-Fi network.
-================================================================================
--->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quiz Buzzer - Master Edition</title>
-    
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: #0b0b0b; color: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-x: hidden; position: relative; }
-        
-        .screen { width: 100%; max-width: 400px; background-color: #161616; border: 1px solid #262626; border-radius: 24px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: none; }
-        .screen.active { display: block; }
-        
-        h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-align: center; margin-bottom: 24px; color: #ffffff; }
-        h1 span { color: #ef4444; }
-        h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-        .subtitle { font-size: 12px; color: #a3a3a3; font-family: monospace; text-transform: uppercase; margin-bottom: 16px; }
-        .section-title { font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; margin-top: 12px; }
-        
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-        input { width: 100%; background-color: #222; border: 1px solid #333; border-radius: 12px; padding: 14px; color: #ffffff; font-size: 16px; }
-        input:focus { outline: none; border-color: #ef4444; }
-        
-        .btn { display: block; width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 700; border: none; cursor: pointer; text-align: center; margin-bottom: 12px; transition: transform 0.1s; }
-        .btn:active { transform: scale(0.98); }
-        .btn-primary { background-color: #ffffff; color: #000000; }
-        .btn-secondary { background-color: #222222; color: #d4d4d4; border: 1px solid #333333; }
-        .btn-danger { background-color: #ef4444; color: #ffffff; }
-        
-        .meta-container { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
-        .badge { background-color: #222; border: 1px solid #333; padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; color: #a3a3a3; }
-        
-        .buzzer-wrapper { display: flex; justify-content: center; align-items: center; height: 260px; }
-        .buzzer-btn { width: 200px; height: 200px; border-radius: 50%; font-size: 22px; font-weight: 800; text-transform: uppercase; border: none; color: #ffffff; cursor: pointer; outline: none; transition: all 0.1s; }
-        
-        .buzzer-red { background-color: #dc2626; border-bottom: 12px solid #991b1b; box-shadow: 0 12px 0 #991b1b, 0 20px 30px rgba(0,0,0,0.5); }
-        .buzzer-red:active { transform: translateY(8px); border-bottom: 4px solid #991b1b; box-shadow: 0 4px 0 #991b1b, 0 10px 15px rgba(0,0,0,0.3); }
-        .buzzer-green { background-color: #059669; border-bottom: 12px solid #047857; box-shadow: 0 12px 0 #047857, 0 20px 30px rgba(0,0,0,0.4); pointer-events: none; }
-        
-        .panel-box { background-color: #1a1a1a; border: 1px solid #262626; border-radius: 14px; padding: 12px; max-height: 160px; overflow-y: auto; margin-bottom: 14px; }
-        .row-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background-color: #222; border: 1px solid #333; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
-        .row-entry.winner { background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #34d399; font-weight: bold; }
-        .fastest-tag { background-color: #059669; color: #000000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-right: 6px; }
-        .timestamp { font-family: monospace; font-size: 11px; color: #a3a3a3; }
-        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 12px 0; font-size: 13px; }
-        
-        .roster-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .roster-card { background-color: #222; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #d4d4d4; font-weight: 600; }
-        
-        .version-stamp { position: absolute; bottom: 8px; right: 12px; font-family: monospace; font-size: 10px; color: #404040; pointer-events: none; text-align: right; z-index: 9999; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Quiz Buzzer</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+
+body{
+    background:#0b0b0b;
+    color:white;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.screen{
+    width:100%;
+    max-width:430px;
+    background:#161616;
+    border:1px solid #262626;
+    border-radius:24px;
+    padding:28px;
+    display:none;
+    box-shadow:0 20px 40px rgba(0,0,0,0.5);
+}
+
+.screen.active{
+    display:block;
+}
+
+h1{
+    text-align:center;
+    font-size:30px;
+    margin-bottom:24px;
+    font-weight:800;
+}
+
+h1 span{
+    color:#ef4444;
+}
+
+input{
+    width:100%;
+    background:#222;
+    border:1px solid #333;
+    border-radius:12px;
+    padding:14px;
+    color:white;
+    font-size:16px;
+    margin-bottom:14px;
+}
+
+button{
+    width:100%;
+    border:none;
+    border-radius:12px;
+    padding:16px;
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:12px;
+    cursor:pointer;
+}
+
+.primary{
+    background:white;
+    color:black;
+}
+
+.secondary{
+    background:#222;
+    color:#d4d4d4;
+    border:1px solid #333;
+}
+
+.danger{
+    background:#ef4444;
+    color:white;
+}
+
+.badges{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:22px;
+}
+
+.badge{
+    background:#222;
+    border:1px solid #333;
+    border-radius:20px;
+    padding:6px 12px;
+    font-size:12px;
+}
+
+.buzzer-wrap{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:260px;
+}
+
+.buzzer{
+    width:200px;
+    height:200px;
+    border-radius:50%;
+    border:none;
+    color:white;
+    font-size:22px;
+    font-weight:800;
+}
+
+.buzzer.red{
+    background:#dc2626;
+    border-bottom:12px solid #991b1b;
+}
+
+.buzzer.green{
+    background:#059669;
+    border-bottom:12px solid #047857;
+}
+
+.panel{
+    background:#1a1a1a;
+    border:1px solid #262626;
+    border-radius:14px;
+    padding:12px;
+    max-height:180px;
+    overflow:auto;
+    margin-top:12px;
+}
+
+.row{
+    background:#222;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.row.winner{
+    background:rgba(5,150,105,0.15);
+    border-color:#059669;
+    color:#34d399;
+    font-weight:bold;
+}
+
+.empty{
+    text-align:center;
+    color:#666;
+    padding:20px 0;
+}
+
+.section{
+    font-size:12px;
+    color:#aaa;
+    margin-top:12px;
+    margin-bottom:8px;
+    text-transform:uppercase;
+}
+
+.roster{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.roster-item{
+    background:#222;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
+}
+
+</style>
 </head>
+
 <body>
 
-    <!-- VIEW 1: HOME SHEET CONSOLE -->
-    <div id="view-home" class="screen active">
-        <h1>QUIZ<span>BUZZER</span></h1>
-        <div class="form-group">
-            <label>Your Username</label>
-            <input type="text" id="username-input" placeholder="E.g. Alex">
+<!-- HOME -->
+
+<div id="home" class="screen active">
+
+    <h1>QUIZ<span>BUZZER</span></h1>
+
+    <input
+        id="username"
+        placeholder="Enter Username"
+    >
+
+    <button
+        class="primary"
+        onclick="joinAsGuest()"
+    >
+        Join as Guest
+    </button>
+
+    <button
+        class="secondary"
+        onclick="showScreen('password')"
+    >
+        Host as Admin
+    </button>
+
+</div>
+
+<!-- PASSWORD -->
+
+<div id="password" class="screen">
+
+    <h1>ADMIN<span>LOCK</span></h1>
+
+    <input
+        type="password"
+        id="passwordInput"
+        placeholder="Enter Password"
+    >
+
+    <button
+        class="primary"
+        onclick="verifyAdminPassword()"
+    >
+        Verify Access
+    </button>
+
+    <button
+        class="secondary"
+        onclick="showScreen('home')"
+    >
+        Back
+    </button>
+
+</div>
+
+<!-- PLAYER -->
+
+<div id="player" class="screen">
+
+    <div class="badges">
+
+        <div class="badge">
+            SESSION: LIVE
         </div>
-        <button onclick="navigateGuestJoinFlow()" class="btn btn-primary">Join as Guest</button>
-        <button onclick="switchDirectLayoutView('view-password')" class="btn btn-secondary">Host as Admin</button>
+
+        <div class="badge">
+            PLAYER:
+            <span id="playerName">-</span>
+        </div>
+
     </div>
 
-    <!-- VIEW 2: MASTER PASSWORD ACCESS CODES GATEWAY -->
-    <div id="view-password" class="screen">
-        <h1>ADMIN<span>LOCK</span></h1>
-        <div class="form-group">
-            <label>Enter Master Password</label>
-            <input type="password" id="password-input" placeholder="••••••••">
-        </div>
-        <button onclick="validateAdminSecretPassword()" class="btn btn-primary">Verify Access</button>
-        <button onclick="switchDirectLayoutView('view-home')" class="btn btn-secondary">Return to Home</button>
+    <div class="buzzer-wrap">
+
+        <button
+            id="buzzBtn"
+            class="buzzer red"
+            onclick="buzz()"
+        >
+            PRESS TO BUZZ
+        </button>
+
     </div>
 
-    <!-- VIEW 3: GUEST RESPONDENT INTERACTIVE BUZZER CARD -->
-    <div id="view-player" class="screen">
-        <div class="meta-container">
-            <div class="badge">SESSION: <strong style="color:#34d399;">LIVE</strong></div>
-            <div class="badge">PLAYER: <strong id="p-name-badge">-</strong></div>
-        </div>
-        <div class="buzzer-wrapper">
-            <button id="buzzer-btn" onclick="executePlayerBuzzHitTransmission()" class="buzzer-btn buzzer-red">Press to Buzz</button>
-        </div>
-        <button onclick="syncPlayerBuzzerDisplayState()" class="btn btn-secondary" style="margin-top: 12px; padding: 12px; font-size: 14px;">Sync Buzzer Status 🔄</button>
+</div>
+
+<!-- ADMIN -->
+
+<div id="admin" class="screen">
+
+    <h1>HOST PANEL</h1>
+
+    <button
+        class="primary"
+        onclick="resetBuzzers()"
+    >
+        Reset Buzzers
+    </button>
+
+    <button
+        class="danger"
+        onclick="closeSession()"
+    >
+        Close & Delete Session
+    </button>
+
+    <div class="section">
+        Buzz Order
     </div>
 
-    <!-- VIEW 4: MASTER CONTROL BOARD REAL-TIME FEED -->
-    <div id="view-admin" class="screen" style="max-width: 480px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #262626; padding-bottom: 12px;">
-            <div>
-                <h2>Host Control Center</h2>
-                <div class="subtitle" style="font-size:10px; color:#34d399; font-weight:bold;">Master Session Online</div>
-            </div>
-            <button onclick="clearMasterLeaderboardFeed()" class="btn btn-primary" style="width: auto; padding: 10px 16px; margin: 0; font-size: 13px;">Reset Board</button>
+    <div id="buzzFeed" class="panel">
+        <div class="empty">
+            Waiting for players...
         </div>
-        
-        <span class="section-title">Buzzer Feed Order (Real-Time Auto Update)</span>
-        <div id="admin-leaderboard-box" class="panel-box">
-            <div class="empty-text">Waiting for players to buzz...</div>
-        </div>
-        
-        <span class="section-title">Active Connected Participants Roster</span>
-        <div id="admin-roster-box" class="panel-box" style="background-color: #121212;">
-            <div class="empty-text">No users active...</div>
-        </div>
-        
-        <button onclick="terminateMasterSession()" class="btn btn-danger" style="font-size: 14px; padding: 12px; margin-top: 12px;">Close & Delete Session</button>
     </div>
 
-    <!-- Rolling Odometer System Sequence Token Stamp Badge -->
-    <div class="version-stamp">Ver.1.6.9.14.05.2026.18.15.00</div>
+    <div class="section">
+        Connected Players
+    </div>
 
-    <!-- RE-ENGINEERED REAL-TIME PARSING CHANNELS -->
-    <script>
-        /* CRUCIAL FIXED ENDPOINT SYSTEM: Hardcoded with the explicit secure protocol path layout format */
-        const API_BASE = "supabase.co";
-        
-        const HEADERS = {
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-        };
+    <div id="rosterFeed" class="panel">
+        <div class="empty">
+            No players connected...
+        </div>
+    </div>
 
-        let localPlayerIdentityString = "";
-        let canBuzz = true;
-        let dynamicNetworkPollingInterval = null;
+</div>
 
-        function switchDirectLayoutView(targetViewId) {
-            const views = ['view-home', 'view-password', 'view-player', 'view-admin'];
-            views.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'none';
-            });
-            const target = document.getElementById(targetViewId);
-            if(target) target.style.display = 'block';
+<script>
+
+/* =========================
+   SUPABASE CONFIG
+========================= */
+
+const SUPABASE_URL =
+"https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
+
+const SUPABASE_KEY =
+"YOUR_ANON_KEY_HERE";
+
+const HEADERS = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type":"application/json",
+    Prefer:"return=representation"
+};
+
+/* =========================
+   GLOBALS
+========================= */
+
+let username = "";
+let canBuzz = true;
+
+let playerLoop = null;
+let adminLoop = null;
+
+/* =========================
+   SCREEN SWITCHER
+========================= */
+
+function showScreen(id){
+
+    document
+        .querySelectorAll(".screen")
+        .forEach(screen=>{
+            screen.classList.remove("active");
+        });
+
+    document
+        .getElementById(id)
+        .classList.add("active");
+}
+
+/* =========================
+   ADMIN LOGIN
+========================= */
+
+async function verifyAdminPassword(){
+
+    const pass =
+        document
+        .getElementById("passwordInput")
+        .value
+        .trim();
+
+    if(pass !== "BlackMirror"){
+
+        alert(
+            "Password is incorrect. But Shut Up and Dance anyway!"
+        );
+
+        return;
+    }
+
+    try{
+
+        /* create session */
+
+        await fetch(
+            `${SUPABASE_URL}/rooms`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    id:"MASTER_SESSION"
+                })
+            }
+        );
+
+    }catch(e){}
+
+    showScreen("admin");
+
+    refreshAdmin();
+
+    adminLoop = setInterval(
+        refreshAdmin,
+        1500
+    );
+}
+
+/* =========================
+   JOIN AS GUEST
+========================= */
+
+async function joinAsGuest(){
+
+    const input =
+        document
+        .getElementById("username");
+
+    const name =
+        input.value.trim();
+
+    if(!name){
+
+        alert("Please enter username");
+
+        return;
+    }
+
+    if(name.toUpperCase() === "ADMIN"){
+
+        alert("Username ADMIN is reserved");
+
+        return;
+    }
+
+    try{
+
+        const roomResponse =
+            await fetch(
+                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roomData =
+            await roomResponse.json();
+
+        if(roomData.length === 0){
+
+            alert(
+                "Please wait for the host to start a new session"
+            );
+
+            return;
         }
 
-        async function validateAdminSecretPassword() {
-            const secretInput = document.getElementById('password-input');
-            if(!secretInput) return;
+        username = name;
 
-            if (secretInput.value.trim() === "BlackMirror") {
-                try {
-                    const response = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
-                    const currentRooms = await response.json();
+        document
+            .getElementById("playerName")
+            .innerText = username;
 
-                    if (currentRooms && currentRooms.length > 0) {
-                        secretInput.value = "";
-                        return alert("An Admin session is already running on this network. Duplicate hosts are blocked.");
-                    }
+        /* add roster entry */
 
-                    await fetch(`${API_BASE}/rooms`, {
-                        method: "POST",
-                        headers: HEADERS,
-                        body: JSON.stringify({ id: "MASTER_SESSION" })
-                    });
+        await fetch(
+            `${SUPABASE_URL}/buzzes`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    room_id:"ROSTER",
+                    username:username
+                })
+            }
+        );
 
-                    secretInput.value = ""; 
-                    switchDirectLayoutView('view-admin');
-                    await clearMasterLeaderboardFeed();
-                    
-                    dynamicNetworkPollingInterval = setInterval(refreshAdminDashboardPanelsNatively, 400);
-                } catch(err) {
-                    alert("Database connection error. Try again.");
+        showScreen("player");
+
+        syncPlayer();
+
+        playerLoop = setInterval(
+            syncPlayer,
+            1500
+        );
+
+    }catch(err){
+
+        alert(
+            "Connection failed"
+        );
+    }
+}
+
+/* =========================
+   BUZZ
+========================= */
+
+async function buzz(){
+
+    if(!canBuzz) return;
+
+    canBuzz = false;
+
+    if(navigator.vibrate){
+
+        navigator.vibrate(100);
+    }
+
+    const btn =
+        document.getElementById("buzzBtn");
+
+    btn.className = "buzzer green";
+
+    btn.innerText = "BUZZED!";
+
+    try{
+
+        const response =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
                 }
-            } else {
-                alert("That is the wrong password , but Shut up and Dance");
+            );
+
+        const existing =
+            await response.json();
+
+        const alreadyBuzzed =
+            existing.some(
+                item=>item.username === username
+            );
+
+        if(!alreadyBuzzed){
+
+            await fetch(
+                `${SUPABASE_URL}/buzzes`,
+                {
+                    method:"POST",
+                    headers:HEADERS,
+                    body:JSON.stringify({
+                        room_id:"MASTER_SESSION",
+                        username:username
+                    })
+                }
+            );
+        }
+
+    }catch(e){}
+}
+
+/* =========================
+   PLAYER SYNC
+========================= */
+
+async function syncPlayer(){
+
+    try{
+
+        /* session check */
+
+        const sessionCheck =
+            await fetch(
+                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const sessionData =
+            await sessionCheck.json();
+
+        if(sessionData.length === 0){
+
+            clearInterval(playerLoop);
+
+            alert(
+                "Host closed the session"
+            );
+
+            location.reload();
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&select=username&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const buzzes =
+            await response.json();
+
+        const btn =
+            document.getElementById("buzzBtn");
+
+        if(buzzes.length === 0){
+
+            canBuzz = true;
+
+            btn.className = "buzzer red";
+
+            btn.innerText =
+                "PRESS TO BUZZ";
+
+        }else{
+
+            const winner =
+                buzzes[0];
+
+            btn.className =
+                "buzzer green";
+
+            if(winner.username === username){
+
+                btn.innerText =
+                    "YOU BUZZED";
+
+            }else{
+
+                btn.innerText =
+                    `${winner.username} BUZZED`;
             }
         }
 
-        async function navigateGuestJoinFlow() {
-            const userInput = document.getElementById('username-input');
-            if(!userInput) return;
+    }catch(e){}
+}
 
-            const nameToken = userInput.value.trim();
-            if (!nameToken) return alert("Validation Failure: Username field input is required to connect.");
-            if (nameToken.toUpperCase() === "ADMIN") return alert("Validation Failure: The username 'Admin' is reserved.");
+/* =========================
+   ADMIN REFRESH
+========================= */
 
-            try {
-                const response = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
-                const sessionGateList = await response.json();
+async function refreshAdmin(){
 
-                if (!sessionGateList || sessionGateList.length === 0) {
-                    return alert("Wait for the host to start the buzzing session");
+    try{
+
+        /* buzz list */
+
+        const buzzResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&select=username,buzzed_at&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
                 }
+            );
 
-                localPlayerIdentityString = nameToken;
-                document.getElementById('p-name-badge').innerText = localPlayerIdentityString;
+        const buzzes =
+            await buzzResponse.json();
 
-                switchDirectLayoutView('view-player');
-                
-                await fetch(`${API_BASE}/buzzes`, {
-                    method: "POST",
-                    headers: HEADERS,
-                    body: JSON.stringify({ room_id: "ROSTER_STREAM", username: localPlayerIdentityString })
+        const feed =
+            document.getElementById("buzzFeed");
+
+        if(buzzes.length === 0){
+
+            feed.innerHTML =
+                `<div class="empty">
+                    Waiting for players...
+                </div>`;
+
+        }else{
+
+            feed.innerHTML = "";
+
+            buzzes
+                .slice(0,10)
+                .forEach((item,index)=>{
+
+                    const row =
+                        document.createElement("div");
+
+                    row.className =
+                        `row ${
+                            index === 0
+                            ? "winner"
+                            : ""
+                        }`;
+
+                    row.innerHTML =
+                        `
+                        <span>
+                            #${index+1}
+                            ${item.username}
+                        </span>
+
+                        <span>
+                            ${
+                                new Date(
+                                    item.buzzed_at
+                                ).toLocaleTimeString()
+                            }
+                        </span>
+                        `;
+
+                    feed.appendChild(row);
+
                 });
+        }
 
-                await syncPlayerBuzzerDisplayState();
-                dynamicNetworkPollingInterval = setInterval(syncPlayerBuzzerDisplayState, 500);
-            } catch(err) {
-                alert("Wait for the host to start the buzzing session");
+        /* roster */
+
+        const rosterResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.ROSTER&select=username`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roster =
+            await rosterResponse.json();
+
+        const rosterFeed =
+            document.getElementById("rosterFeed");
+
+        if(roster.length === 0){
+
+            rosterFeed.innerHTML =
+                `<div class="empty">
+                    No players connected...
+                </div>`;
+
+        }else{
+
+            const unique =
+                [...new Set(
+                    roster.map(
+                        p=>p.username
+                    )
+                )];
+
+            rosterFeed.innerHTML =
+                `<div class="roster"></div>`;
+
+            const rosterDiv =
+                rosterFeed.querySelector(".roster");
+
+            unique.forEach(player=>{
+
+                const tag =
+                    document.createElement("div");
+
+                tag.className =
+                    "roster-item";
+
+                tag.innerText =
+                    player;
+
+                rosterDiv.appendChild(tag);
+
+            });
+        }
+
+    }catch(e){}
+}
+
+/* =========================
+   RESET BUZZERS
+========================= */
+
+async function resetBuzzers(){
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
             }
-        }
+        );
 
-        async function executePlayerBuzzHitTransmission() {
-            if (!canBuzz) return;
-            canBuzz = false;
+    }catch(e){}
+}
 
-            if (navigator.vibrate) navigator.vibrate(100);
+/* =========================
+   CLOSE SESSION
+========================= */
 
-            const btn = document.getElementById('buzzer-btn');
-            if(btn) {
-                btn.className = "buzzer-btn buzzer-green";
-                btn.innerText = "BUZZED!";
+async function closeSession(){
+
+    const confirmClose =
+        confirm(
+            "Are you sure you want to end this session?"
+        );
+
+    if(!confirmClose) return;
+
+    clearInterval(adminLoop);
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
             }
+        );
 
-            try {
-                const response = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username`, { method: "GET", headers: HEADERS });
-                const currentBuzzesList = await response.json();
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
 
-                if (currentBuzzesList && currentBuzzesList.length < 10) {
-                    const matchCheck = currentBuzzesList.some(entry => entry.username === localPlayerIdentityString);
-                    if (!matchCheck) {
-                        await fetch(`${API_BASE}/buzzes`, {
-                            method: "POST",
-                            headers: HEADERS,
-                            body: JSON.stringify({ room_id: "MASTER_SESSION", username: localPlayerIdentityString })
-                        });
-                    }
-                }
-            } catch(e) {}
-        }
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.ROSTER`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
 
-        async function syncPlayerBuzzerDisplayState() {
-            try {
-                const sessionResponse = await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION&select=id`, { method: "GET", headers: HEADERS });
-                const activeSessionList = await sessionResponse.json();
+        alert(
+            "Session closed successfully"
+        );
 
-                if (!activeSessionList || activeSessionList.length === 0) {
-                    clearInterval(dynamicNetworkPollingInterval);
-                    alert("The Host has closed this gaming room session.");
-                    location.reload();
-                    return;
-                }
+        location.reload();
 
-                const response = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username&order=buzzed_at.asc`, { method: "GET", headers: HEADERS });
-                const currentBuzzesList = await response.json();
-                const btn = document.getElementById('buzzer-btn');
-                if(!btn) return;
+    }catch(err){
 
-                if (!currentBuzzesList || currentBuzzesList.length === 0) {
-                    canBuzz = true;
-                    btn.className = "buzzer-btn buzzer-red";
-                    btn.innerText = "Press to Buzz";
-                } else {
-                    /* TOTAL REPAIR PASS FIXED: Injected strict index brackets to map row array parameters correctly */
-                    const firstWinnerRowEntry = currentBuzzesList[0];
-                    if (firstWinnerRowEntry && firstWinnerRowEntry.username === localPlayerIdentityString) {
-                        btn.className = "buzzer-btn buzzer-green";
-                        btn.innerText = "YOU BUZZED!";
-                    } else {
-                        canBuzz = false;
-                        const globalWinnerIdentity = firstWinnerRowEntry ? firstWinnerRowEntry.username : "Player";
-                        btn.className = "buzzer-btn buzzer-green";
-                        btn.innerText = `${globalWinnerIdentity} BUZZED!`;
-                    }
-                }
-            } catch(e) {}
-        }
+        alert(
+            "Failed to close session"
+        );
+    }
+}
 
-        async function refreshAdminDashboardPanelsNatively() {
-            try {
-                const buzzResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION&select=username,buzzed_at&order=buzzed_at.asc`, { method: "GET", headers: HEADERS });
-                const buzzes = await buzzResponse.json();
-                const leaderboardContainer = document.getElementById('admin-leaderboard-box');
-                
-                if (leaderboardContainer && buzzes) {
-                    if (buzzes.length === 0) {
-                        leaderboardContainer.innerHTML = '<div class="empty-text">Waiting for players to buzz...</div>';
-                    } else {
-                        leaderboardContainer.innerHTML = "";
-                        buzzes.slice(0, 10).forEach((entry, idx) => {
-                            const row = document.createElement('div');
-                            const isFirst = idx === 0;
-                            row.className = `row-entry ${isFirst ? 'winner' : ''}`;
-                            row.innerHTML = `
-                                <div class="row-left">
-                                    <span class="rank">#${idx + 1}</span>
-                                    <span>${entry.username}</span>
-                                </div>
-                                <div style="display:flex; align-items:center;">
-                                    ${isFirst ? '<span class="fastest-tag">FASTEST</span>' : ''}
-                                    <span class="timestamp">${new Date(entry.buzzed_at).toLocaleTimeString()}</span>
-                                </div>
-                            `;
-                            leaderboardContainer.appendChild(row);
-                        });
-                    }
-                }
+</script>
 
-                const rosterResponse = await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM&select=username`, { method: "GET", headers: HEADERS });
-                const roster = await rosterResponse.json();
-                const rosterContainer = document.getElementById('admin-roster-box');
-                
-                if (rosterContainer && roster) {
-                    if (roster.length === 0) {
-                        rosterContainer.innerHTML = '<div class="empty-text">No users active...</div>';
-                    } else {
-                        rosterContainer.innerHTML = '<div class="roster-grid"></div>';
-                        const grid = rosterContainer.querySelector('.roster-grid');
-                        
-                        const uniqueNames = [...new Set(roster.map(p => p.username))];
-                        uniqueNames.forEach(player => {
-                            const elementCard = document.createElement('span');
-                            elementCard.className = 'roster-card';
-                            elementCard.innerText = player;
-                            grid.appendChild(elementCard);
-                        });
-                    }
-                }
-            } catch(err) {}
-        }
-
-        async function clearMasterLeaderboardFeed() {
-            try {
-                await fetch(`${API_BASE}/buzzes?room_id=eq.MASTER_SESSION`, { method: "DELETE", headers: HEADERS });
-            } catch(e) {}
-        }
-
-        async function terminateMasterSession() {
-            if(!confirm("Are you sure you want to end this game session? All guests will be disconnected.")) return;
-            clearInterval(dynamicNetworkPollingInterval);
-            try {
-                await fetch(`${API_BASE}/rooms?id=eq.MA
+</body>
+</html>
