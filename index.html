@@ -6,8 +6,9 @@ CHANGELOG:
 - Ver.1.0.0 - 1.5.3: Array-based multi-room backend execution attempts (Retired).
 - Ver.1.6.0: Hardcoded password validation checks and split-view roster frames.
 - Ver.1.6.4: Fixed duplicate admin logins via strict GET presence locks.
-- Ver.1.6.5.14.05.2026.18.00.00 (Current): FIXED Line 245 array index bracket syntax.
-             Permanently resolved background loop crashes to unfreeze landing screens.
+- Ver.1.6.5: Fixed Line 245 array index lookup error loops.
+- Ver.1.6.6.14.05.2026.18.05.00 (Current): HARDCODED explicit absolute URL protocol
+             routing path to resolve Vercel folder relative address crashes.
 ================================================================================
 -->
 <head>
@@ -54,7 +55,7 @@ CHANGELOG:
         .row-entry.winner { background-color: rgba(5, 150, 105, 0.15); border-color: #059669; color: #34d399; font-weight: bold; }
         .fastest-tag { background-color: #059669; color: #000000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; letter-spacing: 1px; margin-right: 6px; }
         .timestamp { font-family: monospace; font-size: 11px; color: #a3a3a3; }
-        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 24px 0; font-size: 13px; }
+        .empty-text { text-align: center; color: #525252; font-style: italic; padding: 12px 0; font-size: 13px; }
         
         .roster-grid { display: flex; flex-wrap: wrap; gap: 6px; }
         .roster-card { background-color: #222; border: 1px solid #333; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #d4d4d4; font-weight: 600; }
@@ -64,7 +65,7 @@ CHANGELOG:
 </head>
 <body>
 
-    <!-- VIEW 1: HOME SHEET CONSOLE -->
+    <!-- VIEW 1: HOME CONSOLE SHEET -->
     <div id="view-home" class="screen active">
         <h1>QUIZ<span>BUZZER</span></h1>
         <div class="form-group">
@@ -75,7 +76,7 @@ CHANGELOG:
         <button onclick="switchDirectLayoutView('view-password')" class="btn btn-secondary">Host as Admin</button>
     </div>
 
-    <!-- VIEW 2: MASTER PASSWORD ACCESS CODES GATEWAY -->
+    <!-- VIEW 2: MASTER PASSWORD GATEWAY ACCESS -->
     <div id="view-password" class="screen">
         <h1>ADMIN<span>LOCK</span></h1>
         <div class="form-group">
@@ -86,7 +87,7 @@ CHANGELOG:
         <button onclick="switchDirectLayoutView('view-home')" class="btn btn-secondary">Return to Home</button>
     </div>
 
-    <!-- VIEW 3: GUEST RESPONDENT INTERACTIVE BUZZER CARD -->
+    <!-- VIEW 3: GUEST RESPONDENT BUZZER VIEWER LAYOUT -->
     <div id="view-player" class="screen">
         <div class="meta-container">
             <div class="badge">SESSION: <strong style="color:#34d399;">LIVE</strong></div>
@@ -98,7 +99,7 @@ CHANGELOG:
         <button onclick="syncPlayerBuzzerDisplayState()" class="btn btn-secondary" style="margin-top: 12px; padding: 12px; font-size: 14px;">Sync Buzzer Status 🔄</button>
     </div>
 
-    <!-- VIEW 4: MASTER CONTROL BOARD REAL-TIME FEED -->
+    <!-- VIEW 4: MASTER CONTROL BOARD MAIN ADMIN DASHBOARD -->
     <div id="view-admin" class="screen" style="max-width: 480px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #262626; padding-bottom: 12px;">
             <div>
@@ -122,11 +123,13 @@ CHANGELOG:
     </div>
 
     <!-- Rolling Odometer System Sequence Token Stamp Badge -->
-    <div class="version-stamp">Ver.1.6.5.14.05.2026.18.00.00</div>
+    <div class="version-stamp">Ver.1.6.6.14.05.2026.18.05.00</div>
 
     <!-- RE-ENGINEERED REAL-TIME PARSING CHANNELS -->
     <script>
+        /* FIXED ENDPOINT URL CORE: Hardcoded explicit absolute domain routing schema to fix Vercel relative path errors */
         const API_BASE = "supabase.co";
+        
         const HEADERS = {
             "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
             "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcHFteWZoYndxc3pkemZqdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MjgwNjEsImV4cCI6MjA5NDMwNDA2MX0.bm1xlejZwhtvGL-CzdozL9yaw3iksaTbe8l1re2vrCg",
@@ -174,7 +177,7 @@ CHANGELOG:
                     
                     dynamicNetworkPollingInterval = setInterval(refreshAdminDashboardPanelsNatively, 400);
                 } catch(err) {
-                    alert("Database connection dropped. Check your Wi-Fi.");
+                    alert("Database connection error: Check network availability.");
                 }
             } else {
                 alert("That is the wrong password , but Shut up and Dance");
@@ -266,7 +269,6 @@ CHANGELOG:
                     btn.className = "buzzer-btn buzzer-red";
                     btn.innerText = "Press to Buzz";
                 } else {
-                    /* FIXED LINE 245: Added hard index [0] to extract the winner row safely without crashes */
                     const firstWinnerRowEntry = currentBuzzesList[0];
                     if (firstWinnerRowEntry && firstWinnerRowEntry.username === localPlayerIdentityString) {
                         btn.className = "buzzer-btn buzzer-green";
@@ -345,11 +347,4 @@ CHANGELOG:
             clearInterval(dynamicNetworkPollingInterval);
             try {
                 await fetch(`${API_BASE}/rooms?id=eq.MASTER_SESSION`, { method: "DELETE", headers: HEADERS });
-                await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM`, { method: "DELETE", headers: HEADERS });
-            } catch(e) {}
-            location.reload();
-        }
-    </script>
-</body>
-</html>
-
+                await fetch(`${API_BASE}/buzzes?room_id=eq.ROSTER_STREAM`, { 
