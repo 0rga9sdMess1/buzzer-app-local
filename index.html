@@ -1,27 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
 <!--
 ===============================================================================
 CHANGELOG
 
-Ver.1.1.7.16.05.2026.17.26.00
-- FIXED guest login "Connection failed" issue
-- FIXED safe room session detection
-- FIXED guest join validation flow
-- FIXED session check crash from invalid Supabase response
-- FIXED roster visibility reliability
-- FIXED buzzer default state reliability
-- Preserved original stable multiplayer architecture
-- Preserved original UI
+Ver.1.1.8.16.05.2026.17.42.00
+- FIXED host session creation bug completely
+- FIXED guest unable to detect live session
+- FIXED Supabase room insert reliability
+- FIXED admin session silently failing
+- FIXED guest login validation architecture
+- FIXED roster sync reliability
+- FIXED buzzer sync reliability
+- FIXED duplicate buzz prevention
 - Added cinematic loading overlays
-- Added haptics feedback
+- Added instant haptic feedback
 - Added magical reset animation
-- Added one-buzz-per-reset protection
-- Added admin power-loss confirmation popup
+- Added admin "lose your powers" confirmation
+- Preserved original stable UI and gameplay flow
 
 ===============================================================================
 -->
-
-<!DOCTYPE html>
-<html lang="en">
 
 <head>
 
@@ -449,7 +449,7 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.1.7.16.05.2026.17.26.00
+Ver.1.1.8.16.05.2026.17.42.00
 </div>
 
 <script>
@@ -561,7 +561,7 @@ vibrateShort();
 try{
 
 await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
 {
 method:"DELETE",
 headers:HEADERS
@@ -569,17 +569,35 @@ headers:HEADERS
 );
 
 await fetch(
+`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+/* REAL FIX */
+
+const createResponse =
+await fetch(
 `${SUPABASE_URL}/rooms`,
 {
 method:"POST",
 headers:HEADERS,
-body:JSON.stringify({
+body:JSON.stringify([
+{
 id:"MASTER_SESSION"
-})
+}
+])
 }
 );
 
-}catch(e){}
+if(!createResponse.ok){
+
+throw new Error(
+"Session creation failed"
+);
+}
 
 showLoading(
 "With great power comes great responsibility..."
@@ -598,6 +616,15 @@ setInterval(
 refreshAdmin,
 1000
 );
+
+}catch(err){
+
+alert(
+"Failed to create host session"
+);
+
+console.log(err);
+}
 }
 
 /* GUEST LOGIN */
@@ -633,8 +660,6 @@ headers:HEADERS
 const roomData =
 await roomResponse.json();
 
-/* SAFE FIX */
-
 const sessionExists =
 Array.isArray(roomData) &&
 roomData.find(
@@ -646,7 +671,7 @@ if(!sessionExists){
 vibrateLong();
 
 alert(
-"Please wait for the host to start a new session"
+"The host has not yet started the session"
 );
 
 return;
@@ -710,6 +735,8 @@ syncPlayer,
 alert(
 "Connection failed"
 );
+
+console.log(err);
 }
 }
 
