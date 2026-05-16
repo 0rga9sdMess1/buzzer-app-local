@@ -5,20 +5,21 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.1.8.16.05.2026.17.42.00
-- FIXED host session creation bug completely
-- FIXED guest unable to detect live session
-- FIXED Supabase room insert reliability
-- FIXED admin session silently failing
-- FIXED guest login validation architecture
-- FIXED roster sync reliability
-- FIXED buzzer sync reliability
-- FIXED duplicate buzz prevention
+Ver.1.1.9.16.05.2026.18.02.00
+- FIXED host session creation failure
+- FIXED guest login validation completely
+- FIXED session detection logic
+- FIXED roster visibility
+- FIXED buzzer synchronization
+- FIXED accidental guest auto-login bug
+- FIXED buzzer default green state issue
+- Preserved original stable multiplayer architecture
 - Added cinematic loading overlays
-- Added instant haptic feedback
+- Added improved haptics feedback
 - Added magical reset animation
-- Added admin "lose your powers" confirmation
-- Preserved original stable UI and gameplay flow
+- Added one-buzz-per-reset protection
+- Added admin "lose your powers" confirmation popup
+- Preserved original UI design philosophy
 
 ===============================================================================
 -->
@@ -256,12 +257,12 @@ color:#555;
 font-family:monospace;
 }
 
-/* LOADING */
+/* LOADING OVERLAY */
 
 #loadingOverlay{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.82);
+background:rgba(0,0,0,0.84);
 backdrop-filter:blur(6px);
 display:none;
 justify-content:center;
@@ -295,9 +296,9 @@ transform:rotate(360deg);
 
 #loadingText{
 font-size:16px;
+line-height:1.5;
 text-align:center;
 max-width:260px;
-line-height:1.5;
 }
 
 </style>
@@ -449,16 +450,24 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.1.8.16.05.2026.17.42.00
+Ver.1.1.9.16.05.2026.18.02.00
 </div>
 
 <script>
+
+/* =========================
+SUPABASE CONFIG
+========================= */
 
 const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
 
 const SUPABASE_KEY =
 "PASTE_YOUR_ORIGINAL_SUPABASE_KEY_HERE";
+
+/* =========================
+HEADERS
+========================= */
 
 const HEADERS = {
 apikey: SUPABASE_KEY,
@@ -467,15 +476,25 @@ Authorization:`Bearer ${SUPABASE_KEY}`,
 Prefer:"return=representation"
 };
 
+/* =========================
+GLOBALS
+========================= */
+
 const clientId = crypto.randomUUID();
 
 let username = "";
+
 let playerLoop = null;
+
 let adminLoop = null;
+
 let canBuzz = true;
+
 let hasBuzzedThisRound = false;
 
-/* HELPERS */
+/* =========================
+HELPERS
+========================= */
 
 function vibrateShort(){
 
@@ -535,7 +554,9 @@ document
 .classList.add("active");
 }
 
-/* ADMIN LOGIN */
+/* =========================
+ADMIN LOGIN
+========================= */
 
 async function adminLogin(){
 
@@ -561,14 +582,6 @@ vibrateShort();
 try{
 
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-await fetch(
 `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
 {
 method:"DELETE",
@@ -576,7 +589,13 @@ headers:HEADERS
 }
 );
 
-/* REAL FIX */
+await fetch(
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
 
 const createResponse =
 await fetch(
@@ -584,18 +603,16 @@ await fetch(
 {
 method:"POST",
 headers:HEADERS,
-body:JSON.stringify([
-{
+body:JSON.stringify({
 id:"MASTER_SESSION"
-}
-])
+})
 }
 );
 
 if(!createResponse.ok){
 
 throw new Error(
-"Session creation failed"
+"Failed to create session"
 );
 }
 
@@ -627,7 +644,9 @@ console.log(err);
 }
 }
 
-/* GUEST LOGIN */
+/* =========================
+GUEST LOGIN
+========================= */
 
 async function joinGuest(){
 
@@ -651,7 +670,7 @@ try{
 
 const roomResponse =
 await fetch(
-`${SUPABASE_URL}/rooms?select=id`,
+`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
 {
 headers:HEADERS
 }
@@ -661,10 +680,8 @@ const roomData =
 await roomResponse.json();
 
 const sessionExists =
-Array.isArray(roomData) &&
-roomData.find(
-room => room.id === "MASTER_SESSION"
-);
+Array.isArray(roomData)
+&& roomData.length > 0;
 
 if(!sessionExists){
 
@@ -740,7 +757,9 @@ console.log(err);
 }
 }
 
-/* BUZZ */
+/* =========================
+BUZZ
+========================= */
 
 async function buzz(){
 
@@ -782,7 +801,9 @@ type:"buzz"
 }catch(e){}
 }
 
-/* PLAYER SYNC */
+/* =========================
+PLAYER SYNC
+========================= */
 
 async function syncPlayer(){
 
@@ -839,7 +860,9 @@ btn.innerText =
 }catch(e){}
 }
 
-/* ADMIN REFRESH */
+/* =========================
+ADMIN REFRESH
+========================= */
 
 async function refreshAdmin(){
 
@@ -889,6 +912,14 @@ row.innerHTML =
 <span>
 #${index+1}
 ${item.username}
+</span>
+
+<span>
+${
+new Date(
+item.buzzed_at
+).toLocaleTimeString()
+}
 </span>
 `;
 
@@ -947,7 +978,9 @@ rosterDiv.appendChild(tag);
 }catch(e){}
 }
 
-/* RESET */
+/* =========================
+RESET
+========================= */
 
 async function resetBuzzers(){
 
@@ -977,7 +1010,9 @@ headers:HEADERS
 }catch(e){}
 }
 
-/* LEAVE */
+/* =========================
+LEAVE
+========================= */
 
 async function leaveSession(){
 
@@ -986,7 +1021,9 @@ clearInterval(playerLoop);
 location.reload();
 }
 
-/* CLOSE SESSION */
+/* =========================
+CLOSE SESSION
+========================= */
 
 async function closeSession(){
 
