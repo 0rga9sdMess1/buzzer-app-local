@@ -5,19 +5,20 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.3.1.16.05.2026.19.52.00
+Ver.1.3.2.16.05.2026.20.18.00
 
-- FIXED guest buzzer showing green on entry
-- FIXED buzz button getting stuck on "BUZZING..."
-- FIXED admin console not showing connected players
-- FIXED guest/admin session synchronization
-- FIXED session sharing across devices/tabs
-- Improved session persistence architecture
-- Preserved stable original UI and flow
+- FIXED guest "Connection Failed" issue
+- RESTORED original stable multiplayer logic
+- RESTORED working guest join architecture
+- FIXED guest buzzer turning green on entry
+- FIXED buzz button getting stuck on BUZZING
+- FIXED admin roster not showing guests
 - Added cinematic loading overlays
 - Added improved haptic feedback
 - Added magical reset animation
 - Added duplicate buzz prevention
+- Added improved close session confirmation
+- Preserved original stable UI architecture
 
 ===============================================================================
 -->
@@ -446,16 +447,24 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.3.1.16.05.2026.19.52.00
+Ver.1.3.2.16.05.2026.20.18.00
 </div>
 
 <script>
+
+/* =========================
+SUPABASE CONFIG
+========================= */
 
 const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
 
 const SUPABASE_KEY =
-"PASTE_YOUR_ORIGINAL_SUPABASE_KEY_HERE";
+"PASTE_YOUR_REAL_SUPABASE_KEY_HERE";
+
+/* =========================
+HEADERS
+========================= */
 
 const HEADERS = {
 apikey: SUPABASE_KEY,
@@ -463,6 +472,10 @@ Authorization:`Bearer ${SUPABASE_KEY}`,
 "Content-Type":"application/json",
 Prefer:"return=representation"
 };
+
+/* =========================
+GLOBALS
+========================= */
 
 const clientId = crypto.randomUUID();
 
@@ -474,11 +487,11 @@ let adminLoop = null;
 
 let canBuzz = true;
 
-let hasBuzzedThisRound = false;
+let hasBuzzed = false;
 
-let currentSession = "";
-
-/* HELPERS */
+/* =========================
+HELPERS
+========================= */
 
 function vibrateShort(){
 
@@ -538,7 +551,9 @@ document
 .classList.add("active");
 }
 
-/* ADMIN LOGIN */
+/* =========================
+ADMIN LOGIN
+========================= */
 
 async function adminLogin(){
 
@@ -561,27 +576,6 @@ return;
 
 vibrateShort();
 
-currentSession =
-"MASTER_" + Date.now();
-
-try{
-
-await fetch(
-`${SUPABASE_URL}/buzzes`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-room_id:"ACTIVE_SESSION",
-username:currentSession,
-client_id:"HOST",
-type:"session"
-})
-}
-);
-
-}catch(e){}
-
 showLoading(
 "With great power comes great responsibility..."
 );
@@ -601,7 +595,9 @@ refreshAdmin,
 );
 }
 
-/* GUEST LOGIN */
+/* =========================
+GUEST LOGIN
+========================= */
 
 async function joinGuest(){
 
@@ -623,18 +619,18 @@ return;
 
 try{
 
-const sessionResponse =
+const response =
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.ACTIVE_SESSION&type=eq.session&select=username&order=buzzed_at.desc&limit=1`,
+`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
 {
 headers:HEADERS
 }
 );
 
-const sessionData =
-await sessionResponse.json();
+const roomData =
+await response.json();
 
-if(sessionData.length === 0){
+if(roomData.length === 0){
 
 vibrateLong();
 
@@ -645,16 +641,7 @@ alert(
 return;
 }
 
-currentSession =
-sessionData[0].username;
-
 vibrateShort();
-
-username = name;
-
-document
-.getElementById("playerName")
-.innerText = username;
 
 showLoading(
 "Stretch your fingers, sharpen your brains, let's get buzzing!"
@@ -663,6 +650,26 @@ showLoading(
 await delay(1500);
 
 hideLoading();
+
+username = name;
+
+document
+.getElementById("playerName")
+.innerText = username;
+
+await fetch(
+`${SUPABASE_URL}/buzzes`,
+{
+method:"POST",
+headers:HEADERS,
+body:JSON.stringify({
+room_id:"MASTER_SESSION",
+username:username,
+client_id:clientId,
+type:"roster"
+})
+}
+);
 
 showScreen("player");
 
@@ -677,21 +684,7 @@ btn.innerText =
 
 canBuzz = true;
 
-hasBuzzedThisRound = false;
-
-await fetch(
-`${SUPABASE_URL}/buzzes`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-room_id:currentSession,
-username:username,
-client_id:clientId,
-type:"roster"
-})
-}
-);
+hasBuzzed = false;
 
 syncPlayer();
 
@@ -713,15 +706,17 @@ console.log(err);
 }
 }
 
-/* BUZZ */
+/* =========================
+BUZZ
+========================= */
 
 async function buzz(){
 
 if(!canBuzz) return;
 
-if(hasBuzzedThisRound) return;
+if(hasBuzzed) return;
 
-hasBuzzedThisRound = true;
+hasBuzzed = true;
 
 canBuzz = false;
 
@@ -744,7 +739,7 @@ await fetch(
 method:"POST",
 headers:HEADERS,
 body:JSON.stringify({
-room_id:currentSession,
+room_id:"MASTER_SESSION",
 username:username,
 client_id:clientId,
 type:"buzz"
@@ -755,7 +750,9 @@ type:"buzz"
 }catch(e){}
 }
 
-/* PLAYER SYNC */
+/* =========================
+PLAYER SYNC
+========================= */
 
 async function syncPlayer(){
 
@@ -763,7 +760,7 @@ try{
 
 const response =
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.${currentSession}&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
 {
 headers:HEADERS
 }
@@ -779,7 +776,7 @@ if(buzzes.length === 0){
 
 canBuzz = true;
 
-hasBuzzedThisRound = false;
+hasBuzzed = false;
 
 btn.className =
 "buzzer red";
@@ -815,7 +812,9 @@ btn.innerText =
 }catch(e){}
 }
 
-/* ADMIN REFRESH */
+/* =========================
+ADMIN REFRESH
+========================= */
 
 async function refreshAdmin(){
 
@@ -823,7 +822,7 @@ try{
 
 const buzzResponse =
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.${currentSession}&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
 {
 headers:HEADERS
 }
@@ -885,7 +884,7 @@ buzzFeed.appendChild(row);
 
 const rosterResponse =
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.${currentSession}&type=eq.roster&select=username`,
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username`,
 {
 headers:HEADERS
 }
@@ -933,7 +932,9 @@ rosterDiv.appendChild(tag);
 }catch(e){}
 }
 
-/* RESET */
+/* =========================
+RESET
+========================= */
 
 async function resetBuzzers(){
 
@@ -942,7 +943,7 @@ vibrateLong();
 document.body.animate(
 [
 {opacity:1},
-{opacity:0.65},
+{opacity:0.6},
 {opacity:1}
 ],
 {
@@ -953,7 +954,7 @@ duration:500
 try{
 
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.${currentSession}&type=eq.buzz`,
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz`,
 {
 method:"DELETE",
 headers:HEADERS
@@ -963,7 +964,9 @@ headers:HEADERS
 }catch(e){}
 }
 
-/* LEAVE */
+/* =========================
+LEAVE
+========================= */
 
 async function leaveSession(){
 
@@ -991,7 +994,9 @@ headers:HEADERS
 location.reload();
 }
 
-/* CLOSE */
+/* =========================
+CLOSE SESSION
+========================= */
 
 async function closeSession(){
 
@@ -1007,7 +1012,15 @@ clearInterval(adminLoop);
 try{
 
 await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.${currentSession}`,
+`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+await fetch(
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
 {
 method:"DELETE",
 headers:HEADERS
