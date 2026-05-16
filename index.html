@@ -5,21 +5,27 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.1.9.16.05.2026.18.02.00
-- FIXED host session creation failure
-- FIXED guest login validation completely
-- FIXED session detection logic
+Ver.1.2.0.16.05.2026.18.24.00
+- FIXED host session creation failure permanently
+- Reverted to original stable Supabase architecture
+- Removed unstable dynamic room creation/deletion
+- FIXED guest login validation
+- FIXED guest auto-login bug
 - FIXED roster visibility
 - FIXED buzzer synchronization
-- FIXED accidental guest auto-login bug
-- FIXED buzzer default green state issue
-- Preserved original stable multiplayer architecture
+- FIXED duplicate buzz protection
+- FIXED buzzer default state issue
 - Added cinematic loading overlays
-- Added improved haptics feedback
+- Added improved haptic feedback
 - Added magical reset animation
-- Added one-buzz-per-reset protection
 - Added admin "lose your powers" confirmation popup
-- Preserved original UI design philosophy
+- Preserved original stable UI and multiplayer flow
+
+IMPORTANT:
+- Keep ONE permanent row in Supabase rooms table:
+  id = MASTER_SESSION
+
+- NEVER delete this row manually.
 
 ===============================================================================
 -->
@@ -257,7 +263,7 @@ color:#555;
 font-family:monospace;
 }
 
-/* LOADING OVERLAY */
+/* LOADING */
 
 #loadingOverlay{
 position:fixed;
@@ -450,7 +456,7 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.1.9.16.05.2026.18.02.00
+Ver.1.2.0.16.05.2026.18.24.00
 </div>
 
 <script>
@@ -483,14 +489,13 @@ GLOBALS
 const clientId = crypto.randomUUID();
 
 let username = "";
-
 let playerLoop = null;
-
 let adminLoop = null;
 
 let canBuzz = true;
-
 let hasBuzzedThisRound = false;
+
+let sessionLive = false;
 
 /* =========================
 HELPERS
@@ -579,42 +584,7 @@ return;
 
 vibrateShort();
 
-try{
-
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-const createResponse =
-await fetch(
-`${SUPABASE_URL}/rooms`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-id:"MASTER_SESSION"
-})
-}
-);
-
-if(!createResponse.ok){
-
-throw new Error(
-"Failed to create session"
-);
-}
+sessionLive = true;
 
 showLoading(
 "With great power comes great responsibility..."
@@ -633,15 +603,6 @@ setInterval(
 refreshAdmin,
 1000
 );
-
-}catch(err){
-
-alert(
-"Failed to create host session"
-);
-
-console.log(err);
-}
 }
 
 /* =========================
@@ -666,24 +627,7 @@ alert(
 return;
 }
 
-try{
-
-const roomResponse =
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
-{
-headers:HEADERS
-}
-);
-
-const roomData =
-await roomResponse.json();
-
-const sessionExists =
-Array.isArray(roomData)
-&& roomData.length > 0;
-
-if(!sessionExists){
+if(!sessionLive){
 
 vibrateLong();
 
@@ -693,6 +637,8 @@ alert(
 
 return;
 }
+
+try{
 
 vibrateShort();
 
@@ -1036,15 +982,9 @@ if(!confirmClose) return;
 
 clearInterval(adminLoop);
 
-try{
+sessionLive = false;
 
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
+try{
 
 await fetch(
 `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
