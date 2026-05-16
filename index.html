@@ -5,21 +5,20 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.2.1.16.05.2026.18.42.00
+Ver.1.2.2.16.05.2026.19.02.00
 
-- Restored ORIGINAL stable multiplayer architecture
-- Removed broken host-session validation logic
-- Removed unstable sessionLive logic
-- Removed unstable room creation/deletion logic
+- FIXED stale buzz entries issue
+- FIXED guest buzzer turning green instantly
+- FIXED previous session interference
+- Host login now clears old session data automatically
+- Preserved original stable multiplayer architecture
 - Preserved original Supabase flow
 - Added cinematic loading overlays
-- Added instant haptic feedback
-- Added magical buzzer reset animation
-- Added improved admin close confirmation
+- Added improved haptic feedback
+- Added magical reset animation
 - Added duplicate buzz prevention
-- Added smoother transitions and polish
-- Preserved stable guest/admin synchronization
-- Preserved original UI philosophy
+- Added smoother transitions
+- Added improved admin confirmation popup
 
 ===============================================================================
 -->
@@ -451,14 +450,10 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.2.1.16.05.2026.18.42.00
+Ver.1.2.2.16.05.2026.19.02.00
 </div>
 
 <script>
-
-/* =========================
-SUPABASE CONFIG
-========================= */
 
 const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
@@ -466,20 +461,12 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 "PASTE_YOUR_ORIGINAL_SUPABASE_KEY_HERE";
 
-/* =========================
-HEADERS
-========================= */
-
 const HEADERS = {
 apikey: SUPABASE_KEY,
 Authorization:`Bearer ${SUPABASE_KEY}`,
 "Content-Type":"application/json",
 Prefer:"return=representation"
 };
-
-/* =========================
-GLOBALS
-========================= */
 
 const clientId = crypto.randomUUID();
 
@@ -493,9 +480,7 @@ let canBuzz = true;
 
 let hasBuzzedThisRound = false;
 
-/* =========================
-HELPERS
-========================= */
+/* HELPERS */
 
 function vibrateShort(){
 
@@ -555,9 +540,7 @@ document
 .classList.add("active");
 }
 
-/* =========================
-ADMIN LOGIN
-========================= */
+/* ADMIN LOGIN */
 
 async function adminLogin(){
 
@@ -580,6 +563,18 @@ return;
 
 vibrateShort();
 
+try{
+
+await fetch(
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+}catch(e){}
+
 showLoading(
 "With great power comes great responsibility..."
 );
@@ -599,9 +594,7 @@ refreshAdmin,
 );
 }
 
-/* =========================
-GUEST LOGIN
-========================= */
+/* GUEST LOGIN */
 
 async function joinGuest(){
 
@@ -688,9 +681,7 @@ console.log(err);
 }
 }
 
-/* =========================
-BUZZ
-========================= */
+/* BUZZ */
 
 async function buzz(){
 
@@ -732,9 +723,7 @@ type:"buzz"
 }catch(e){}
 }
 
-/* =========================
-PLAYER SYNC
-========================= */
+/* PLAYER SYNC */
 
 async function syncPlayer(){
 
@@ -791,9 +780,7 @@ btn.innerText =
 }catch(e){}
 }
 
-/* =========================
-ADMIN REFRESH
-========================= */
+/* ADMIN REFRESH */
 
 async function refreshAdmin(){
 
@@ -911,9 +898,7 @@ rosterDiv.appendChild(tag);
 }catch(e){}
 }
 
-/* =========================
-RESET
-========================= */
+/* RESET */
 
 async function resetBuzzers(){
 
@@ -943,9 +928,7 @@ headers:HEADERS
 }catch(e){}
 }
 
-/* =========================
-LEAVE SESSION
-========================= */
+/* LEAVE */
 
 async function leaveSession(){
 
@@ -973,9 +956,7 @@ headers:HEADERS
 location.reload();
 }
 
-/* =========================
-CLOSE SESSION
-========================= */
+/* CLOSE */
 
 async function closeSession(){
 
