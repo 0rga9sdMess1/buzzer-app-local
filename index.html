@@ -5,14 +5,17 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.0.4.16.05.2026.22.05.00
+Ver.1.0.4.16.05.2026.23.10.00
 
-- Added haptic feedback for guest/admin actions
-- Added duplicate buzz prevention
+- Added cinematic loading overlays
+- Added guest join loading animation
+- Added admin login loading animation
+- Added improved haptic feedback
+- Added reset vibration feedback
 - Preserved original stable multiplayer architecture
-- Preserved original session logic
-- Preserved original roster sync
-- Preserved original buzzer synchronization
+- Preserved original room/session logic
+- Preserved original roster synchronization
+- Preserved original buzz synchronization
 
 ===============================================================================
 -->
@@ -250,11 +253,66 @@ button:active{
     font-family:monospace;
 }
 
+/* LOADING OVERLAY */
+
+#loadingOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(4px);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    z-index:9999;
+}
+
+#loadingOverlay.active{
+    display:flex;
+}
+
+.loader{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    border:4px solid rgba(255,255,255,0.12);
+    border-top:4px solid #ef4444;
+    animation:spin 0.8s linear infinite;
+    margin-bottom:22px;
+}
+
+@keyframes spin{
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+#loadingText{
+    text-align:center;
+    max-width:280px;
+    line-height:1.5;
+    font-size:16px;
+    color:white;
+}
+
 </style>
 
 </head>
 
 <body>
+
+<div id="loadingOverlay">
+
+    <div class="loader"></div>
+
+    <div id="loadingText">
+        Loading...
+    </div>
+
+</div>
 
 <div id="home" class="screen active">
 
@@ -389,7 +447,7 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.0.4.16.05.2026.22.05.00
+Ver.1.0.4.16.05.2026.23.10.00
 </div>
 
 <script>
@@ -399,7 +457,7 @@ VERSION
 ========================= */
 
 const APP_VERSION =
-"Ver.1.0.4.16.05.2026.22.05.00";
+"Ver.1.0.4.16.05.2026.23.10.00";
 
 /* =========================
 SUPABASE CONFIG
@@ -439,10 +497,8 @@ let alreadyAnnouncedWinner = false;
 
 let audioCtx = null;
 
-let hasBuzzed = false;
-
 /* =========================
-HAPTICS
+HELPERS
 ========================= */
 
 function vibrateShort(){
@@ -459,6 +515,33 @@ function vibrateLong(){
 
         navigator.vibrate([120,40,120]);
     }
+}
+
+function showLoading(text){
+
+    document
+        .getElementById("loadingOverlay")
+        .classList.add("active");
+
+    document
+        .getElementById("loadingText")
+        .innerText = text;
+}
+
+function hideLoading(){
+
+    document
+        .getElementById("loadingOverlay")
+        .classList.remove("active");
+}
+
+function delay(ms){
+
+    return new Promise(resolve=>{
+
+        setTimeout(resolve,ms);
+
+    });
 }
 
 /* =========================
@@ -623,6 +706,14 @@ async function adminLogin(){
 
     }catch(e){}
 
+    showLoading(
+        "With great power comes great responsibility..."
+    );
+
+    await delay(1500);
+
+    hideLoading();
+
     showScreen("admin");
 
     refreshAdmin();
@@ -698,6 +789,14 @@ async function joinGuest(){
             }
         );
 
+        showLoading(
+            "Stretch your fingers, sharpen your brains, let's get buzzing!"
+        );
+
+        await delay(1500);
+
+        hideLoading();
+
         showScreen("player");
 
         syncPlayer();
@@ -720,17 +819,16 @@ async function buzz(){
 
     if(!canBuzz) return;
 
-    if(hasBuzzed) return;
-
     initAudio();
 
     canBuzz = false;
 
-    hasBuzzed = true;
-
     alreadyAnnouncedWinner = false;
 
-    vibrateShort();
+    if(navigator.vibrate){
+
+        navigator.vibrate(100);
+    }
 
     const btn =
         document.getElementById("buzzBtn");
@@ -805,8 +903,6 @@ async function syncPlayer(){
         if(buzzes.length === 0){
 
             canBuzz = true;
-
-            hasBuzzed = false;
 
             alreadyAnnouncedWinner = false;
 
@@ -976,6 +1072,17 @@ async function refreshAdmin(){
 async function resetBuzzers(){
 
     vibrateLong();
+
+    document.body.animate(
+        [
+            {opacity:1},
+            {opacity:0.7},
+            {opacity:1}
+        ],
+        {
+            duration:500
+        }
+    );
 
     try{
 
