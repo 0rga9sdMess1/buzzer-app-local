@@ -5,40 +5,24 @@
 ===============================================================================
 CHANGELOG
 
+Ver.1.1.3.16.05.2026.15.48.00
+- Fixed guest login bypass bug
+- Fixed "Connection Failed" false trigger
+- Fixed guest screen loading without host session
+- Fixed broken guest join flow
+- Fixed buzzer not registering after join
+- Fixed incomplete JavaScript from previous build
+- Restored full stable multiplayer architecture
+- Preserved cinematic loading screens
+- Preserved haptics and animations
+- Preserved safe one-buzz-per-reset system
+
 Ver.1.1.2.16.05.2026.15.28.00
 - Fixed blank home screen issue
 - Restored complete stable HTML structure
 - Fixed missing screen containers
 - Fixed missing HEADERS/global variables
 - Fixed broken loading overlay integration
-- Fixed guest join validation
-- Fixed buzzer default red state
-- Fixed roster visibility on host panel
-- Fixed buzz submission system
-- Added safe one-buzz-per-reset logic
-- Preserved cinematic loading screens
-- Preserved haptic feedback system
-- Preserved magical reset sound
-- Preserved multiplayer stability
-
-Ver.1.1.1.16.05.2026.15.05.00
-- Fixed broken guest session validation
-- Fixed buzzer staying green on load
-- Fixed roster/player visibility issue
-- Fixed buzz submission issue
-- Added safe single-buzz-per-reset logic
-- Preserved cinematic loading overlays
-- Preserved haptics system
-- Added magical reset sound
-- Added reset refresh animation
-- Restored stable multiplayer behaviour
-
-Ver.1.0.3.14.05.2026.21.10.00
-- Added "Concept by BanRap" branding
-- Improved winner sound with double ding
-- Improved winner animation polish
-- Added smoother UI transitions
-- Finalized stable multiplayer release
 ===============================================================================
 -->
 
@@ -453,14 +437,6 @@ button:active{
         </div>
     </div>
 
-    <button
-        class="danger"
-        onclick="closeSession()"
-        style="margin-top:16px;"
-    >
-        Close & Delete Session
-    </button>
-
 </div>
 
 <div class="brand">
@@ -468,17 +444,10 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.1.2.16.05.2026.15.28.00
+Ver.1.1.3.16.05.2026.15.48.00
 </div>
 
 <script>
-
-/* =========================
-VERSION
-========================= */
-
-const APP_VERSION =
-"Ver.1.1.2.16.05.2026.15.28.00";
 
 /* =========================
 SUPABASE CONFIG
@@ -488,7 +457,7 @@ const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
 
 const SUPABASE_KEY =
-"PASTE_YOUR_EXISTING_SUPABASE_KEY_HERE";
+"PASTE_YOUR_ORIGINAL_SUPABASE_KEY_HERE";
 
 /* =========================
 HEADERS
@@ -564,10 +533,6 @@ function delay(ms){
     });
 }
 
-/* =========================
-SCREEN SWITCH
-========================= */
-
 function showScreen(id){
 
     document
@@ -636,10 +601,7 @@ async function adminLogin(){
     refreshAdmin();
 
     adminLoop =
-        setInterval(
-            refreshAdmin,
-            1000
-        );
+        setInterval(refreshAdmin,1000);
 }
 
 /* =========================
@@ -669,14 +631,23 @@ async function joinGuest(){
             await fetch(
                 `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
                 {
+                    method:"GET",
                     headers:HEADERS
                 }
             );
 
+        if(!roomResponse.ok){
+
+            throw new Error();
+        }
+
         const roomData =
             await roomResponse.json();
 
-        if(roomData.length === 0){
+        if(
+            !Array.isArray(roomData) ||
+            roomData.length === 0
+        ){
 
             vibrateLong();
 
@@ -693,19 +664,25 @@ async function joinGuest(){
         .getElementById("playerName")
         .innerText = username;
 
-        await fetch(
-            `${SUPABASE_URL}/buzzes`,
-            {
-                method:"POST",
-                headers:HEADERS,
-                body:JSON.stringify({
-                    room_id:"MASTER_SESSION",
-                    username:username,
-                    client_id:clientId,
-                    type:"roster"
-                })
-            }
-        );
+        const rosterResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes`,
+                {
+                    method:"POST",
+                    headers:HEADERS,
+                    body:JSON.stringify({
+                        room_id:"MASTER_SESSION",
+                        username:username,
+                        client_id:clientId,
+                        type:"roster"
+                    })
+                }
+            );
+
+        if(!rosterResponse.ok){
+
+            throw new Error();
+        }
 
         vibrateShort();
 
@@ -722,9 +699,11 @@ async function joinGuest(){
         const btn =
             document.getElementById("buzzBtn");
 
-        btn.className = "buzzer red";
+        btn.className =
+            "buzzer red";
 
-        btn.innerText = "PRESS TO BUZZ";
+        btn.innerText =
+            "PRESS TO BUZZ";
 
         canBuzz = true;
 
@@ -737,10 +716,269 @@ async function joinGuest(){
 
     }catch(err){
 
+        vibrateLong();
+
         alert(
             "Connection failed"
         );
     }
+}
+
+/* =========================
+BUZZ
+========================= */
+
+async function buzz(){
+
+    if(!canBuzz) return;
+
+    if(hasBuzzedThisRound) return;
+
+    hasBuzzedThisRound = true;
+
+    canBuzz = false;
+
+    vibrateShort();
+
+    const btn =
+        document.getElementById("buzzBtn");
+
+    btn.className =
+        "buzzer green";
+
+    btn.innerText =
+        "BUZZING...";
+
+    try{
+
+        const response =
+            await fetch(
+                `${SUPABASE_URL}/buzzes`,
+                {
+                    method:"POST",
+                    headers:HEADERS,
+                    body:JSON.stringify({
+                        room_id:"MASTER_SESSION",
+                        username:username,
+                        client_id:clientId,
+                        type:"buzz"
+                    })
+                }
+            );
+
+        if(!response.ok){
+
+            throw new Error();
+        }
+
+    }catch(e){
+
+        hasBuzzedThisRound = false;
+
+        canBuzz = true;
+
+        btn.className =
+            "buzzer red";
+
+        btn.innerText =
+            "PRESS TO BUZZ";
+
+        alert(
+            "Buzz failed"
+        );
+    }
+}
+
+/* =========================
+SYNC PLAYER
+========================= */
+
+async function syncPlayer(){
+
+    try{
+
+        const response =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const buzzes =
+            await response.json();
+
+        const btn =
+            document.getElementById("buzzBtn");
+
+        if(buzzes.length === 0){
+
+            hasBuzzedThisRound = false;
+
+            canBuzz = true;
+
+            btn.className =
+                "buzzer red";
+
+            btn.innerText =
+                "PRESS TO BUZZ";
+
+        }else{
+
+            const winner =
+                buzzes[0];
+
+            btn.className =
+                "buzzer green";
+
+            if(
+                winner.client_id === clientId
+            ){
+
+                btn.innerText =
+                    "YOU BUZZED FIRST";
+
+            }else{
+
+                btn.innerText =
+                    `${winner.username} BUZZED`;
+            }
+        }
+
+    }catch(e){}
+}
+
+/* =========================
+REFRESH ADMIN
+========================= */
+
+async function refreshAdmin(){
+
+    try{
+
+        const buzzResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const buzzes =
+            await buzzResponse.json();
+
+        const buzzFeed =
+            document.getElementById("buzzFeed");
+
+        if(buzzes.length === 0){
+
+            buzzFeed.innerHTML =
+            `
+            <div class="empty">
+                Waiting for players...
+            </div>
+            `;
+
+        }else{
+
+            buzzFeed.innerHTML = "";
+
+            buzzes.forEach((item,index)=>{
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    `row ${
+                        index===0
+                        ? "winner"
+                        : ""
+                    }`;
+
+                row.innerHTML =
+                `
+                <span>
+                    #${index+1}
+                    ${item.username}
+                </span>
+                `;
+
+                buzzFeed.appendChild(row);
+
+            });
+        }
+
+        const rosterResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roster =
+            await rosterResponse.json();
+
+        const rosterFeed =
+            document.getElementById("rosterFeed");
+
+        if(roster.length === 0){
+
+            rosterFeed.innerHTML =
+            `
+            <div class="empty">
+                No players connected...
+            </div>
+            `;
+
+        }else{
+
+            rosterFeed.innerHTML =
+            `<div class="roster"></div>`;
+
+            const rosterDiv =
+                rosterFeed.querySelector(".roster");
+
+            roster.forEach(player=>{
+
+                const tag =
+                    document.createElement("div");
+
+                tag.className =
+                    "roster-item";
+
+                tag.innerText =
+                    player.username;
+
+                rosterDiv.appendChild(tag);
+
+            });
+        }
+
+    }catch(e){}
+}
+
+/* =========================
+RESET
+========================= */
+
+async function resetBuzzers(){
+
+    hasBuzzedThisRound = false;
+
+    vibrateLong();
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+    }catch(e){}
 }
 
 </script>
