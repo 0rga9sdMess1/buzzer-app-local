@@ -5,20 +5,19 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.3.2.16.05.2026.20.18.00
+Ver.1.3.3.16.05.2026.20.42.00
 
-- FIXED guest "Connection Failed" issue
-- RESTORED original stable multiplayer logic
-- RESTORED working guest join architecture
-- FIXED guest buzzer turning green on entry
-- FIXED buzz button getting stuck on BUZZING
-- FIXED admin roster not showing guests
-- Added cinematic loading overlays
-- Added improved haptic feedback
+- FIXED guest joining before host session issue
+- FIXED buzzer not syncing issue
+- FIXED admin roster visibility issue
+- FIXED stale MASTER_SESSION conflicts
+- Added proper room cleanup before new host session
+- Preserved original stable multiplayer architecture
+- Added loading overlays
+- Added improved haptics
 - Added magical reset animation
 - Added duplicate buzz prevention
-- Added improved close session confirmation
-- Preserved original stable UI architecture
+- Added improved host close confirmation
 
 ===============================================================================
 -->
@@ -254,8 +253,6 @@ color:#555;
 font-family:monospace;
 }
 
-/* LOADING */
-
 #loadingOverlay{
 position:fixed;
 inset:0;
@@ -447,14 +444,10 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.3.2.16.05.2026.20.18.00
+Ver.1.3.3.16.05.2026.20.42.00
 </div>
 
 <script>
-
-/* =========================
-SUPABASE CONFIG
-========================= */
 
 const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
@@ -462,20 +455,12 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 "PASTE_YOUR_REAL_SUPABASE_KEY_HERE";
 
-/* =========================
-HEADERS
-========================= */
-
 const HEADERS = {
 apikey: SUPABASE_KEY,
 Authorization:`Bearer ${SUPABASE_KEY}`,
 "Content-Type":"application/json",
 Prefer:"return=representation"
 };
-
-/* =========================
-GLOBALS
-========================= */
 
 const clientId = crypto.randomUUID();
 
@@ -489,9 +474,7 @@ let canBuzz = true;
 
 let hasBuzzed = false;
 
-/* =========================
-HELPERS
-========================= */
+/* HELPERS */
 
 function vibrateShort(){
 
@@ -551,9 +534,7 @@ document
 .classList.add("active");
 }
 
-/* =========================
-ADMIN LOGIN
-========================= */
+/* ADMIN LOGIN */
 
 async function adminLogin(){
 
@@ -576,6 +557,41 @@ return;
 
 vibrateShort();
 
+try{
+
+/* CLEAN OLD SESSION */
+
+await fetch(
+`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+await fetch(
+`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+/* CREATE FRESH SESSION */
+
+await fetch(
+`${SUPABASE_URL}/rooms`,
+{
+method:"POST",
+headers:HEADERS,
+body:JSON.stringify({
+id:"MASTER_SESSION"
+})
+}
+);
+
+}catch(e){}
+
 showLoading(
 "With great power comes great responsibility..."
 );
@@ -595,9 +611,7 @@ refreshAdmin,
 );
 }
 
-/* =========================
-GUEST LOGIN
-========================= */
+/* GUEST LOGIN */
 
 async function joinGuest(){
 
@@ -619,7 +633,7 @@ return;
 
 try{
 
-const response =
+const roomResponse =
 await fetch(
 `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
 {
@@ -628,7 +642,7 @@ headers:HEADERS
 );
 
 const roomData =
-await response.json();
+await roomResponse.json();
 
 if(roomData.length === 0){
 
@@ -706,9 +720,7 @@ console.log(err);
 }
 }
 
-/* =========================
-BUZZ
-========================= */
+/* BUZZ */
 
 async function buzz(){
 
@@ -750,9 +762,7 @@ type:"buzz"
 }catch(e){}
 }
 
-/* =========================
-PLAYER SYNC
-========================= */
+/* PLAYER SYNC */
 
 async function syncPlayer(){
 
@@ -812,9 +822,7 @@ btn.innerText =
 }catch(e){}
 }
 
-/* =========================
-ADMIN REFRESH
-========================= */
+/* ADMIN REFRESH */
 
 async function refreshAdmin(){
 
@@ -932,9 +940,7 @@ rosterDiv.appendChild(tag);
 }catch(e){}
 }
 
-/* =========================
-RESET
-========================= */
+/* RESET */
 
 async function resetBuzzers(){
 
@@ -964,9 +970,7 @@ headers:HEADERS
 }catch(e){}
 }
 
-/* =========================
-LEAVE
-========================= */
+/* LEAVE */
 
 async function leaveSession(){
 
@@ -994,9 +998,7 @@ headers:HEADERS
 location.reload();
 }
 
-/* =========================
-CLOSE SESSION
-========================= */
+/* CLOSE SESSION */
 
 async function closeSession(){
 
