@@ -5,27 +5,21 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.2.0.16.05.2026.18.24.00
-- FIXED host session creation failure permanently
-- Reverted to original stable Supabase architecture
-- Removed unstable dynamic room creation/deletion
-- FIXED guest login validation
-- FIXED guest auto-login bug
-- FIXED roster visibility
-- FIXED buzzer synchronization
-- FIXED duplicate buzz protection
-- FIXED buzzer default state issue
+Ver.1.2.1.16.05.2026.18.42.00
+
+- Restored ORIGINAL stable multiplayer architecture
+- Removed broken host-session validation logic
+- Removed unstable sessionLive logic
+- Removed unstable room creation/deletion logic
+- Preserved original Supabase flow
 - Added cinematic loading overlays
-- Added improved haptic feedback
-- Added magical reset animation
-- Added admin "lose your powers" confirmation popup
-- Preserved original stable UI and multiplayer flow
-
-IMPORTANT:
-- Keep ONE permanent row in Supabase rooms table:
-  id = MASTER_SESSION
-
-- NEVER delete this row manually.
+- Added instant haptic feedback
+- Added magical buzzer reset animation
+- Added improved admin close confirmation
+- Added duplicate buzz prevention
+- Added smoother transitions and polish
+- Preserved stable guest/admin synchronization
+- Preserved original UI philosophy
 
 ===============================================================================
 -->
@@ -268,7 +262,7 @@ font-family:monospace;
 #loadingOverlay{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.84);
+background:rgba(0,0,0,0.86);
 backdrop-filter:blur(6px);
 display:none;
 justify-content:center;
@@ -282,13 +276,13 @@ display:flex;
 }
 
 .loader{
-width:54px;
-height:54px;
+width:56px;
+height:56px;
 border-radius:50%;
 border:4px solid rgba(255,255,255,0.15);
 border-top:4px solid #ef4444;
 animation:spin 0.8s linear infinite;
-margin-bottom:18px;
+margin-bottom:20px;
 }
 
 @keyframes spin{
@@ -304,7 +298,8 @@ transform:rotate(360deg);
 font-size:16px;
 line-height:1.5;
 text-align:center;
-max-width:260px;
+max-width:280px;
+padding:0 20px;
 }
 
 </style>
@@ -456,7 +451,7 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.2.0.16.05.2026.18.24.00
+Ver.1.2.1.16.05.2026.18.42.00
 </div>
 
 <script>
@@ -489,13 +484,14 @@ GLOBALS
 const clientId = crypto.randomUUID();
 
 let username = "";
+
 let playerLoop = null;
+
 let adminLoop = null;
 
 let canBuzz = true;
-let hasBuzzedThisRound = false;
 
-let sessionLive = false;
+let hasBuzzedThisRound = false;
 
 /* =========================
 HELPERS
@@ -584,8 +580,6 @@ return;
 
 vibrateShort();
 
-sessionLive = true;
-
 showLoading(
 "With great power comes great responsibility..."
 );
@@ -622,17 +616,6 @@ if(!name){
 
 alert(
 "Please enter username"
-);
-
-return;
-}
-
-if(!sessionLive){
-
-vibrateLong();
-
-alert(
-"The host has not yet started the session"
 );
 
 return;
@@ -694,6 +677,8 @@ syncPlayer,
 );
 
 }catch(err){
+
+vibrateLong();
 
 alert(
 "Connection failed"
@@ -841,7 +826,9 @@ Waiting for players...
 
 buzzFeed.innerHTML = "";
 
-buzzes.forEach((item,index)=>{
+buzzes
+.slice(0,10)
+.forEach((item,index)=>{
 
 const row =
 document.createElement("div");
@@ -935,7 +922,7 @@ vibrateLong();
 document.body.animate(
 [
 {opacity:1},
-{opacity:0.7},
+{opacity:0.65},
 {opacity:1}
 ],
 {
@@ -957,12 +944,31 @@ headers:HEADERS
 }
 
 /* =========================
-LEAVE
+LEAVE SESSION
 ========================= */
 
 async function leaveSession(){
 
+const confirmLeave =
+confirm(
+"Do you really want to leave this exciting session ?"
+);
+
+if(!confirmLeave) return;
+
 clearInterval(playerLoop);
+
+try{
+
+await fetch(
+`${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
+{
+method:"DELETE",
+headers:HEADERS
+}
+);
+
+}catch(e){}
 
 location.reload();
 }
@@ -982,8 +988,6 @@ if(!confirmClose) return;
 
 clearInterval(adminLoop);
 
-sessionLive = false;
-
 try{
 
 await fetch(
@@ -994,9 +998,13 @@ headers:HEADERS
 }
 );
 
+alert(
+"Session closed"
+);
+
 location.reload();
 
-}catch(e){
+}catch(err){
 
 alert(
 "Failed to close session"
