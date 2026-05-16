@@ -5,19 +5,19 @@
 ===============================================================================
 CHANGELOG
 
-Ver.1.3.3.16.05.2026.20.42.00
+Ver.1.0.4.16.05.2026.21.05.00
 
-- FIXED guest joining before host session issue
-- FIXED buzzer not syncing issue
-- FIXED admin roster visibility issue
-- FIXED stale MASTER_SESSION conflicts
-- Added proper room cleanup before new host session
-- Preserved original stable multiplayer architecture
-- Added loading overlays
-- Added improved haptics
+- Added cinematic loading overlays
+- Added guest join loading animation
+- Added admin login loading animation
+- Added improved haptic feedback
 - Added magical reset animation
 - Added duplicate buzz prevention
 - Added improved host close confirmation
+- Preserved original stable multiplayer architecture
+- Preserved original room/session logic
+- Preserved original roster sync
+- Preserved original buzz synchronization
 
 ===============================================================================
 -->
@@ -27,8 +27,8 @@ Ver.1.3.3.16.05.2026.20.42.00
 <meta charset="UTF-8">
 
 <meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 >
 
 <title>Quiz Buzzer</title>
@@ -36,263 +36,267 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 <style>
 
 *{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 
 body{
-background:#0b0b0b;
-color:white;
-min-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-padding:20px;
-overflow:hidden;
+    background:#0b0b0b;
+    color:white;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+    position:relative;
+    overflow:hidden;
 }
 
 .screen{
-width:100%;
-max-width:430px;
-background:#161616;
-border:1px solid #262626;
-border-radius:24px;
-padding:28px;
-display:none;
-box-shadow:0 20px 40px rgba(0,0,0,0.5);
-animation:fadeIn 0.25s ease;
+    width:100%;
+    max-width:430px;
+    background:#161616;
+    border:1px solid #262626;
+    border-radius:24px;
+    padding:28px;
+    display:none;
+    box-shadow:0 20px 40px rgba(0,0,0,0.5);
+    animation:fadeIn 0.25s ease;
 }
 
 .screen.active{
-display:block;
+    display:block;
 }
 
 @keyframes fadeIn{
-from{
-opacity:0;
-transform:translateY(8px);
-}
-to{
-opacity:1;
-transform:translateY(0);
-}
+    from{
+        opacity:0;
+        transform:translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
 }
 
 h1{
-text-align:center;
-font-size:30px;
-margin-bottom:24px;
-font-weight:800;
+    text-align:center;
+    font-size:30px;
+    margin-bottom:24px;
+    font-weight:800;
+    letter-spacing:1px;
 }
 
 h1 span{
-color:#ef4444;
+    color:#ef4444;
 }
 
 input{
-width:100%;
-background:#222;
-border:1px solid #333;
-border-radius:12px;
-padding:14px;
-color:white;
-font-size:16px;
-margin-bottom:14px;
+    width:100%;
+    background:#222;
+    border:1px solid #333;
+    border-radius:12px;
+    padding:14px;
+    color:white;
+    font-size:16px;
+    margin-bottom:14px;
 }
 
 button{
-width:100%;
-border:none;
-border-radius:12px;
-padding:16px;
-font-size:16px;
-font-weight:700;
-margin-bottom:12px;
-cursor:pointer;
-transition:all 0.15s ease;
+    width:100%;
+    border:none;
+    border-radius:12px;
+    padding:16px;
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:12px;
+    cursor:pointer;
+    transition:all 0.15s ease;
 }
 
 button:active{
-transform:scale(0.97);
+    transform:scale(0.97);
 }
 
 .primary{
-background:white;
-color:black;
+    background:white;
+    color:black;
 }
 
 .secondary{
-background:#222;
-color:#d4d4d4;
-border:1px solid #333;
+    background:#222;
+    color:#d4d4d4;
+    border:1px solid #333;
 }
 
 .danger{
-background:#ef4444;
-color:white;
+    background:#ef4444;
+    color:white;
 }
 
 .badges{
-display:flex;
-justify-content:center;
-gap:10px;
-margin-bottom:22px;
-flex-wrap:wrap;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
 }
 
 .badge{
-background:#222;
-border:1px solid #333;
-border-radius:20px;
-padding:6px 12px;
-font-size:12px;
+    background:#222;
+    border:1px solid #333;
+    border-radius:20px;
+    padding:6px 12px;
+    font-size:12px;
 }
 
 .buzzer-wrap{
-display:flex;
-justify-content:center;
-align-items:center;
-height:260px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:260px;
 }
 
 .buzzer{
-width:210px;
-height:210px;
-border-radius:50%;
-border:none;
-color:white;
-font-size:22px;
-font-weight:800;
-transition:all 0.2s ease;
+    width:210px;
+    height:210px;
+    border-radius:50%;
+    border:none;
+    color:white;
+    font-size:22px;
+    font-weight:800;
+    transition:all 0.2s ease;
 }
 
 .red{
-background:#dc2626;
-border-bottom:12px solid #991b1b;
+    background:#dc2626;
+    border-bottom:12px solid #991b1b;
 }
 
 .green{
-background:#059669;
-border-bottom:12px solid #047857;
-box-shadow:0 0 35px rgba(16,185,129,0.6);
+    background:#059669;
+    border-bottom:12px solid #047857;
+    box-shadow:0 0 35px rgba(16,185,129,0.6);
 }
 
 .panel{
-background:#1a1a1a;
-border:1px solid #262626;
-border-radius:14px;
-padding:12px;
-max-height:180px;
-overflow:auto;
-margin-top:12px;
+    background:#1a1a1a;
+    border:1px solid #262626;
+    border-radius:14px;
+    padding:12px;
+    max-height:180px;
+    overflow:auto;
+    margin-top:12px;
 }
 
 .row{
-background:#222;
-border:1px solid #333;
-border-radius:8px;
-padding:10px;
-margin-bottom:8px;
-display:flex;
-justify-content:space-between;
-align-items:center;
+    background:#222;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
 .winner{
-background:rgba(5,150,105,0.15);
-border-color:#059669;
-color:#34d399;
-font-weight:bold;
+    background:rgba(5,150,105,0.15);
+    border-color:#059669;
+    color:#34d399;
+    font-weight:bold;
 }
 
 .section{
-font-size:12px;
-color:#999;
-margin-top:12px;
-margin-bottom:8px;
-text-transform:uppercase;
+    font-size:12px;
+    color:#999;
+    margin-top:12px;
+    margin-bottom:8px;
+    text-transform:uppercase;
 }
 
 .empty{
-text-align:center;
-color:#666;
-padding:20px;
+    text-align:center;
+    color:#666;
+    padding:20px;
 }
 
 .roster{
-display:flex;
-flex-wrap:wrap;
-gap:6px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
 }
 
 .roster-item{
-background:#222;
-border:1px solid #333;
-border-radius:8px;
-padding:6px 10px;
-font-size:12px;
+    background:#222;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
 }
 
 .version{
-position:fixed;
-bottom:8px;
-right:12px;
-font-size:10px;
-color:#555;
-font-family:monospace;
+    position:fixed;
+    bottom:8px;
+    right:12px;
+    font-size:10px;
+    color:#555;
+    font-family:monospace;
 }
 
 .brand{
-position:fixed;
-bottom:8px;
-left:12px;
-font-size:10px;
-color:#555;
-font-family:monospace;
+    position:fixed;
+    bottom:8px;
+    left:12px;
+    font-size:10px;
+    color:#555;
+    font-family:monospace;
 }
 
+/* LOADING OVERLAY */
+
 #loadingOverlay{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.88);
-display:none;
-justify-content:center;
-align-items:center;
-flex-direction:column;
-z-index:9999;
-backdrop-filter:blur(5px);
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.88);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    z-index:9999;
+    backdrop-filter:blur(4px);
 }
 
 #loadingOverlay.active{
-display:flex;
+    display:flex;
 }
 
 .loader{
-width:58px;
-height:58px;
-border-radius:50%;
-border:4px solid rgba(255,255,255,0.15);
-border-top:4px solid #ef4444;
-animation:spin 0.8s linear infinite;
-margin-bottom:20px;
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    border:4px solid rgba(255,255,255,0.12);
+    border-top:4px solid #ef4444;
+    animation:spin 0.8s linear infinite;
+    margin-bottom:22px;
 }
 
 @keyframes spin{
-from{
-transform:rotate(0deg);
-}
-to{
-transform:rotate(360deg);
-}
+    from{
+        transform:rotate(0deg);
+    }
+    to{
+        transform:rotate(360deg);
+    }
 }
 
 #loadingText{
-font-size:16px;
-text-align:center;
-max-width:280px;
-line-height:1.5;
+    text-align:center;
+    max-width:280px;
+    line-height:1.5;
+    font-size:16px;
 }
 
 </style>
@@ -303,139 +307,139 @@ line-height:1.5;
 
 <div id="loadingOverlay">
 
-<div class="loader"></div>
+    <div class="loader"></div>
 
-<div id="loadingText">
-Loading...
-</div>
+    <div id="loadingText">
+        Loading...
+    </div>
 
 </div>
 
 <div id="home" class="screen active">
 
-<h1>QUIZ<span>BUZZER</span></h1>
+    <h1>QUIZ<span>BUZZER</span></h1>
 
-<input
-id="username"
-placeholder="Enter Username"
->
+    <input
+        id="username"
+        placeholder="Enter Username"
+    >
 
-<button
-class="primary"
-onclick="joinGuest()"
->
-Join as Guest
-</button>
+    <button
+        class="primary"
+        onclick="joinGuest()"
+    >
+        Join as Guest
+    </button>
 
-<button
-class="secondary"
-onclick="showScreen('password')"
->
-Host as Admin
-</button>
+    <button
+        class="secondary"
+        onclick="showScreen('password')"
+    >
+        Host as Admin
+    </button>
 
 </div>
 
 <div id="password" class="screen">
 
-<h1>ADMIN<span>LOCK</span></h1>
+    <h1>ADMIN<span>LOCK</span></h1>
 
-<input
-type="password"
-id="passwordInput"
-placeholder="Enter Password"
->
+    <input
+        type="password"
+        id="passwordInput"
+        placeholder="Enter Password"
+    >
 
-<button
-class="primary"
-onclick="adminLogin()"
->
-Verify Access
-</button>
+    <button
+        class="primary"
+        onclick="adminLogin()"
+    >
+        Verify Access
+    </button>
 
-<button
-class="secondary"
-onclick="showScreen('home')"
->
-Back
-</button>
+    <button
+        class="secondary"
+        onclick="showScreen('home')"
+    >
+        Back
+    </button>
 
 </div>
 
 <div id="player" class="screen">
 
-<div class="badges">
+    <div class="badges">
 
-<div class="badge">
-SESSION LIVE
-</div>
+        <div class="badge">
+            SESSION LIVE
+        </div>
 
-<div class="badge">
-PLAYER:
-<span id="playerName">-</span>
-</div>
+        <div class="badge">
+            PLAYER:
+            <span id="playerName">-</span>
+        </div>
 
-</div>
+    </div>
 
-<div class="buzzer-wrap">
+    <div class="buzzer-wrap">
 
-<button
-id="buzzBtn"
-class="buzzer red"
-onclick="buzz()"
->
-PRESS TO BUZZ
-</button>
+        <button
+            id="buzzBtn"
+            class="buzzer red"
+            onclick="buzz()"
+        >
+            PRESS TO BUZZ
+        </button>
 
-</div>
+    </div>
 
-<button
-class="secondary"
-onclick="leaveSession()"
->
-Leave Session
-</button>
+    <button
+        class="secondary"
+        onclick="leaveSession()"
+    >
+        Leave Session
+    </button>
 
 </div>
 
 <div id="admin" class="screen">
 
-<h1>HOST PANEL</h1>
+    <h1>HOST PANEL</h1>
 
-<button
-class="primary"
-onclick="resetBuzzers()"
->
-Reset Buzzers
-</button>
+    <button
+        class="primary"
+        onclick="resetBuzzers()"
+    >
+        Reset Buzzers
+    </button>
 
-<div class="section">
-Buzz Order
-</div>
+    <div class="section">
+        Buzz Order
+    </div>
 
-<div id="buzzFeed" class="panel">
-<div class="empty">
-Waiting for players...
-</div>
-</div>
+    <div id="buzzFeed" class="panel">
+        <div class="empty">
+            Waiting for players...
+        </div>
+    </div>
 
-<div class="section">
-Connected Players
-</div>
+    <div class="section">
+        Connected Players
+    </div>
 
-<div id="rosterFeed" class="panel">
-<div class="empty">
-No players connected...
-</div>
-</div>
+    <div id="rosterFeed" class="panel">
+        <div class="empty">
+            No players connected...
+        </div>
+    </div>
 
-<button
-class="danger"
-onclick="closeSession()"
-style="margin-top:16px;"
->
-Close & Delete Session
-</button>
+    <button
+        class="danger"
+        onclick="closeSession()"
+        style="margin-top:16px;"
+    >
+        Close & Delete Session
+    </button>
 
 </div>
 
@@ -444,10 +448,14 @@ Concept by BanRap
 </div>
 
 <div class="version">
-Ver.1.3.3.16.05.2026.20.42.00
+Ver.1.0.4.16.05.2026.21.05.00
 </div>
 
 <script>
+
+/* =========================
+SUPABASE CONFIG
+========================= */
 
 const SUPABASE_URL =
 "https://wfpqmyfhbwqszdzfjvbl.supabase.co/rest/v1";
@@ -455,592 +463,606 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 "PASTE_YOUR_REAL_SUPABASE_KEY_HERE";
 
+/* =========================
+HEADERS
+========================= */
+
 const HEADERS = {
-apikey: SUPABASE_KEY,
-Authorization:`Bearer ${SUPABASE_KEY}`,
-"Content-Type":"application/json",
-Prefer:"return=representation"
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type":"application/json",
+    Prefer:"return=representation"
 };
+
+/* =========================
+GLOBALS
+========================= */
 
 const clientId = crypto.randomUUID();
 
 let username = "";
 
 let playerLoop = null;
-
 let adminLoop = null;
 
 let canBuzz = true;
 
 let hasBuzzed = false;
 
-/* HELPERS */
+/* =========================
+HELPERS
+========================= */
 
 function vibrateShort(){
 
-if(navigator.vibrate){
+    if(navigator.vibrate){
 
-navigator.vibrate(50);
-}
+        navigator.vibrate(50);
+    }
 }
 
 function vibrateLong(){
 
-if(navigator.vibrate){
+    if(navigator.vibrate){
 
-navigator.vibrate([120,40,120]);
-}
+        navigator.vibrate([120,40,120]);
+    }
 }
 
 function showLoading(text){
 
-document
-.getElementById("loadingText")
-.innerText = text;
+    document
+    .getElementById("loadingText")
+    .innerText = text;
 
-document
-.getElementById("loadingOverlay")
-.classList.add("active");
+    document
+    .getElementById("loadingOverlay")
+    .classList.add("active");
 }
 
 function hideLoading(){
 
-document
-.getElementById("loadingOverlay")
-.classList.remove("active");
+    document
+    .getElementById("loadingOverlay")
+    .classList.remove("active");
 }
 
 function delay(ms){
 
-return new Promise(resolve=>{
+    return new Promise(resolve=>{
 
-setTimeout(resolve,ms);
+        setTimeout(resolve,ms);
 
-});
+    });
 }
+
+/* =========================
+SCREEN SWITCH
+========================= */
 
 function showScreen(id){
 
-document
-.querySelectorAll(".screen")
-.forEach(screen=>{
+    document
+        .querySelectorAll(".screen")
+        .forEach(screen=>{
+            screen.classList.remove("active");
+        });
 
-screen.classList.remove("active");
-
-});
-
-document
-.getElementById(id)
-.classList.add("active");
+    document
+        .getElementById(id)
+        .classList.add("active");
 }
 
-/* ADMIN LOGIN */
+/* =========================
+ADMIN LOGIN
+========================= */
 
 async function adminLogin(){
 
-const password =
-document
-.getElementById("passwordInput")
-.value
-.trim();
+    const password =
+        document
+        .getElementById("passwordInput")
+        .value
+        .trim();
 
-if(password !== "BlackMirror"){
+    if(password !== "BlackMirror"){
 
-vibrateLong();
+        vibrateLong();
 
-alert(
-"Password is incorrect. But Shut Up and Dance anyway!"
-);
+        alert(
+            "Password is incorrect. But Shut Up and Dance anyway!"
+        );
 
-return;
+        return;
+    }
+
+    vibrateShort();
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/rooms`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    id:"MASTER_SESSION"
+                })
+            }
+        );
+
+    }catch(e){}
+
+    showLoading(
+        "With great power comes great responsibility..."
+    );
+
+    await delay(1500);
+
+    hideLoading();
+
+    showScreen("admin");
+
+    refreshAdmin();
+
+    adminLoop =
+        setInterval(
+            refreshAdmin,
+            1000
+        );
 }
 
-vibrateShort();
-
-try{
-
-/* CLEAN OLD SESSION */
-
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-/* CREATE FRESH SESSION */
-
-await fetch(
-`${SUPABASE_URL}/rooms`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-id:"MASTER_SESSION"
-})
-}
-);
-
-}catch(e){}
-
-showLoading(
-"With great power comes great responsibility..."
-);
-
-await delay(1500);
-
-hideLoading();
-
-showScreen("admin");
-
-refreshAdmin();
-
-adminLoop =
-setInterval(
-refreshAdmin,
-1000
-);
-}
-
-/* GUEST LOGIN */
+/* =========================
+GUEST JOIN
+========================= */
 
 async function joinGuest(){
 
-const input =
-document
-.getElementById("username");
+    const input =
+        document
+        .getElementById("username");
 
-const name =
-input.value.trim();
+    const name =
+        input.value.trim();
 
-if(!name){
+    if(!name){
 
-alert(
-"Please enter username"
-);
+        alert(
+            "Please enter username"
+        );
 
-return;
+        return;
+    }
+
+    try{
+
+        const roomResponse =
+            await fetch(
+                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roomData =
+            await roomResponse.json();
+
+        if(roomData.length === 0){
+
+            vibrateLong();
+
+            alert(
+                "Please wait for the host to start a new session"
+            );
+
+            return;
+        }
+
+        vibrateShort();
+
+        showLoading(
+            "Stretch your fingers, sharpen your brains, let's get buzzing!"
+        );
+
+        await delay(1500);
+
+        hideLoading();
+
+        username = name;
+
+        document
+            .getElementById("playerName")
+            .innerText = username;
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    room_id:"MASTER_SESSION",
+                    username:username,
+                    client_id:clientId,
+                    type:"roster"
+                })
+            }
+        );
+
+        showScreen("player");
+
+        syncPlayer();
+
+        playerLoop =
+            setInterval(
+                syncPlayer,
+                700
+            );
+
+    }catch(err){
+
+        alert(
+            "Connection failed"
+        );
+    }
 }
 
-try{
-
-const roomResponse =
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
-{
-headers:HEADERS
-}
-);
-
-const roomData =
-await roomResponse.json();
-
-if(roomData.length === 0){
-
-vibrateLong();
-
-alert(
-"The host has not yet started the session"
-);
-
-return;
-}
-
-vibrateShort();
-
-showLoading(
-"Stretch your fingers, sharpen your brains, let's get buzzing!"
-);
-
-await delay(1500);
-
-hideLoading();
-
-username = name;
-
-document
-.getElementById("playerName")
-.innerText = username;
-
-await fetch(
-`${SUPABASE_URL}/buzzes`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-room_id:"MASTER_SESSION",
-username:username,
-client_id:clientId,
-type:"roster"
-})
-}
-);
-
-showScreen("player");
-
-const btn =
-document.getElementById("buzzBtn");
-
-btn.className =
-"buzzer red";
-
-btn.innerText =
-"PRESS TO BUZZ";
-
-canBuzz = true;
-
-hasBuzzed = false;
-
-syncPlayer();
-
-playerLoop =
-setInterval(
-syncPlayer,
-700
-);
-
-}catch(err){
-
-vibrateLong();
-
-alert(
-"Connection failed"
-);
-
-console.log(err);
-}
-}
-
-/* BUZZ */
+/* =========================
+BUZZ
+========================= */
 
 async function buzz(){
 
-if(!canBuzz) return;
+    if(!canBuzz) return;
 
-if(hasBuzzed) return;
+    if(hasBuzzed) return;
 
-hasBuzzed = true;
+    hasBuzzed = true;
 
-canBuzz = false;
+    canBuzz = false;
 
-vibrateShort();
+    vibrateShort();
 
-const btn =
-document.getElementById("buzzBtn");
+    const btn =
+        document.getElementById("buzzBtn");
 
-btn.className =
-"buzzer green";
+    btn.className =
+        "buzzer green";
 
-btn.innerText =
-"BUZZING...";
+    btn.innerText =
+        "BUZZING...";
 
-try{
+    try{
 
-await fetch(
-`${SUPABASE_URL}/buzzes`,
-{
-method:"POST",
-headers:HEADERS,
-body:JSON.stringify({
-room_id:"MASTER_SESSION",
-username:username,
-client_id:clientId,
-type:"buzz"
-})
+        await fetch(
+            `${SUPABASE_URL}/buzzes`,
+            {
+                method:"POST",
+                headers:HEADERS,
+                body:JSON.stringify({
+                    room_id:"MASTER_SESSION",
+                    username:username,
+                    client_id:clientId,
+                    type:"buzz"
+                })
+            }
+        );
+
+    }catch(e){}
 }
-);
 
-}catch(e){}
-}
-
-/* PLAYER SYNC */
+/* =========================
+PLAYER SYNC
+========================= */
 
 async function syncPlayer(){
 
-try{
+    try{
 
-const response =
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
-{
-headers:HEADERS
+        const roomCheck =
+            await fetch(
+                `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION&select=id`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roomData =
+            await roomCheck.json();
+
+        if(roomData.length === 0){
+
+            clearInterval(playerLoop);
+
+            alert(
+                "The host has ended the Party... hope you had fun!"
+            );
+
+            location.reload();
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,client_id&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const buzzes =
+            await response.json();
+
+        const btn =
+            document.getElementById("buzzBtn");
+
+        if(buzzes.length === 0){
+
+            canBuzz = true;
+
+            hasBuzzed = false;
+
+            btn.className =
+                "buzzer red";
+
+            btn.innerText =
+                "PRESS TO BUZZ";
+
+        }else{
+
+            const winner =
+                buzzes[0];
+
+            if(
+                winner.client_id === clientId
+            ){
+
+                btn.className =
+                    "buzzer green";
+
+                btn.innerText =
+                    "YOU BUZZED FIRST";
+
+            }else{
+
+                btn.className =
+                    "buzzer red";
+
+                btn.innerText =
+                    `${winner.username} BUZZED`;
+            }
+        }
+
+    }catch(e){}
 }
-);
 
-const buzzes =
-await response.json();
-
-const btn =
-document.getElementById("buzzBtn");
-
-if(buzzes.length === 0){
-
-canBuzz = true;
-
-hasBuzzed = false;
-
-btn.className =
-"buzzer red";
-
-btn.innerText =
-"PRESS TO BUZZ";
-
-}else{
-
-const winner =
-buzzes[0];
-
-if(
-winner.client_id === clientId
-){
-
-btn.className =
-"buzzer green";
-
-btn.innerText =
-"YOU BUZZED FIRST";
-
-}else{
-
-btn.className =
-"buzzer red";
-
-btn.innerText =
-`${winner.username} BUZZED`;
-}
-}
-
-}catch(e){}
-}
-
-/* ADMIN REFRESH */
+/* =========================
+ADMIN REFRESH
+========================= */
 
 async function refreshAdmin(){
 
-try{
+    try{
 
-const buzzResponse =
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
-{
-headers:HEADERS
+        const buzzResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz&select=username,buzzed_at&order=buzzed_at.asc`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const buzzes =
+            await buzzResponse.json();
+
+        const buzzFeed =
+            document.getElementById("buzzFeed");
+
+        if(buzzes.length === 0){
+
+            buzzFeed.innerHTML =
+            `
+            <div class="empty">
+                Waiting for players...
+            </div>
+            `;
+
+        }else{
+
+            buzzFeed.innerHTML = "";
+
+            buzzes
+            .slice(0,10)
+            .forEach((item,index)=>{
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    `row ${
+                        index===0
+                        ? "winner"
+                        : ""
+                    }`;
+
+                row.innerHTML =
+                `
+                <span>
+                    #${index+1}
+                    ${item.username}
+                </span>
+
+                <span>
+                    ${
+                        new Date(
+                            item.buzzed_at
+                        ).toLocaleTimeString()
+                    }
+                </span>
+                `;
+
+                buzzFeed.appendChild(row);
+
+            });
+        }
+
+        const rosterResponse =
+            await fetch(
+                `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username`,
+                {
+                    headers:HEADERS
+                }
+            );
+
+        const roster =
+            await rosterResponse.json();
+
+        const rosterFeed =
+            document.getElementById("rosterFeed");
+
+        if(roster.length === 0){
+
+            rosterFeed.innerHTML =
+            `
+            <div class="empty">
+                No players connected...
+            </div>
+            `;
+
+        }else{
+
+            rosterFeed.innerHTML =
+                `<div class="roster"></div>`;
+
+            const rosterDiv =
+                rosterFeed.querySelector(".roster");
+
+            roster.forEach(player=>{
+
+                const tag =
+                    document.createElement("div");
+
+                tag.className =
+                    "roster-item";
+
+                tag.innerText =
+                    player.username;
+
+                rosterDiv.appendChild(tag);
+
+            });
+        }
+
+    }catch(e){}
 }
-);
 
-const buzzes =
-await buzzResponse.json();
-
-const buzzFeed =
-document.getElementById("buzzFeed");
-
-if(buzzes.length === 0){
-
-buzzFeed.innerHTML =
-`
-<div class="empty">
-Waiting for players...
-</div>
-`;
-
-}else{
-
-buzzFeed.innerHTML = "";
-
-buzzes
-.slice(0,10)
-.forEach((item,index)=>{
-
-const row =
-document.createElement("div");
-
-row.className =
-`row ${
-index===0
-? "winner"
-: ""
-}`;
-
-row.innerHTML =
-`
-<span>
-#${index+1}
-${item.username}
-</span>
-
-<span>
-${
-new Date(
-item.buzzed_at
-).toLocaleTimeString()
-}
-</span>
-`;
-
-buzzFeed.appendChild(row);
-
-});
-}
-
-const rosterResponse =
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.roster&select=username`,
-{
-headers:HEADERS
-}
-);
-
-const roster =
-await rosterResponse.json();
-
-const rosterFeed =
-document.getElementById("rosterFeed");
-
-if(roster.length === 0){
-
-rosterFeed.innerHTML =
-`
-<div class="empty">
-No players connected...
-</div>
-`;
-
-}else{
-
-rosterFeed.innerHTML =
-`<div class="roster"></div>`;
-
-const rosterDiv =
-rosterFeed.querySelector(".roster");
-
-roster.forEach(player=>{
-
-const tag =
-document.createElement("div");
-
-tag.className =
-"roster-item";
-
-tag.innerText =
-player.username;
-
-rosterDiv.appendChild(tag);
-
-});
-}
-
-}catch(e){}
-}
-
-/* RESET */
+/* =========================
+RESET
+========================= */
 
 async function resetBuzzers(){
 
-vibrateLong();
+    vibrateLong();
 
-document.body.animate(
-[
-{opacity:1},
-{opacity:0.6},
-{opacity:1}
-],
-{
-duration:500
+    document.body.animate(
+        [
+            {opacity:1},
+            {opacity:0.6},
+            {opacity:1}
+        ],
+        {
+            duration:500
+        }
+    );
+
+    try{
+
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+    }catch(e){}
 }
-);
 
-try{
-
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION&type=eq.buzz`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
-
-}catch(e){}
-}
-
-/* LEAVE */
+/* =========================
+LEAVE SESSION
+========================= */
 
 async function leaveSession(){
 
-const confirmLeave =
-confirm(
-"Do you really want to leave this exciting session ?"
-);
+    const confirmLeave =
+        confirm(
+            "Do you really want to leave this exciting session ?"
+        );
 
-if(!confirmLeave) return;
+    if(!confirmLeave) return;
 
-clearInterval(playerLoop);
+    clearInterval(playerLoop);
 
-try{
+    try{
 
-await fetch(
-`${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
-{
-method:"DELETE",
-headers:HEADERS
+        await fetch(
+            `${SUPABASE_URL}/buzzes?client_id=eq.${clientId}`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
+
+    }catch(e){}
+
+    location.reload();
 }
-);
 
-}catch(e){}
-
-location.reload();
-}
-
-/* CLOSE SESSION */
+/* =========================
+CLOSE SESSION
+========================= */
 
 async function closeSession(){
 
-const confirmClose =
-confirm(
-"Are you sure you want to lose your powers?"
-);
+    const confirmClose =
+        confirm(
+            "Are you sure you want to lose your powers?"
+        );
 
-if(!confirmClose) return;
+    if(!confirmClose) return;
 
-clearInterval(adminLoop);
+    clearInterval(adminLoop);
 
-try{
+    try{
 
-await fetch(
-`${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
+        await fetch(
+            `${SUPABASE_URL}/rooms?id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
 
-await fetch(
-`${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
-{
-method:"DELETE",
-headers:HEADERS
-}
-);
+        await fetch(
+            `${SUPABASE_URL}/buzzes?room_id=eq.MASTER_SESSION`,
+            {
+                method:"DELETE",
+                headers:HEADERS
+            }
+        );
 
-alert(
-"Session closed"
-);
+        alert(
+            "Session closed"
+        );
 
-location.reload();
+        location.reload();
 
-}catch(err){
+    }catch(err){
 
-alert(
-"Failed to close session"
-);
-}
+        alert(
+            "Failed to close session"
+        );
+    }
 }
 
 </script>
